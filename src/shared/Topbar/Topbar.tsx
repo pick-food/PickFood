@@ -24,7 +24,7 @@ export function TopBar({
     <header className="w-full sticky top-0 z-50">
 
       {/* Row 1: 로고 / 검색 / 유저 액션 */}
-      <div className="bg-surface px-4">
+      <div className="bg-white px-4">
         <div className="max-w-[1200px] mx-auto h-[58px] flex items-center justify-between gap-6">
           <a href="/" aria-label="PickFood 홈" className="flex-shrink-0">
             <img src={logo} alt="PickFood" className="h-10 w-auto" />
@@ -43,9 +43,6 @@ export function TopBar({
         </div>
       </div>
 
-      {/* 구분선 */}
-      <div className="w-full h-px bg-gray-200" />
-
       {/* Row 2: 알레르기·질병 필터 */}
       <div className="bg-surface px-4">
         <div className="max-w-[1200px] mx-auto h-10 flex items-center">
@@ -62,6 +59,9 @@ export function TopBar({
           <NavBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
       </div>
+
+      {/* 구분선 */}
+      <div className="w-full h-px bg-gray-200" />
 
     </header>
   );

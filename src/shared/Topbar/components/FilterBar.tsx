@@ -26,7 +26,7 @@ export function FilterBar({ isActive, onToggle }: FilterBarProps) {
               key={item.id}
               onClick={() => onToggle(item.id)}
               className={`
-                flex-shrink-0 h-6 px-[18px]
+                flex-shrink-0 h-6 px-[13px]
                 rounded-base border
                 text-b-13 font-medium whitespace-nowrap
                 transition-colors

@@ -20,7 +20,7 @@ export function SearchBar({ value, onChange, onKeyDown, onSearch }: SearchBarPro
         onKeyDown={onKeyDown}
         placeholder="식품명, 브랜드, 성분 검색"
         className="
-          w-[500px] h-10 px-3
+          w-[500px] h-[40px] px-3
           border-2 border-primary
           rounded-l-[2px]
           text-[13px] font-medium leading-[140%] tracking-[-0.025em]
