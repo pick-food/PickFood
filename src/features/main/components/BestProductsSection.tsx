@@ -2,7 +2,6 @@ import type { FC } from "react";
 import { useProducts } from "../hooks/useProducts";
 import ProductCard from "./ProductCard";
 
-// ── Star icon ──────────────────────────────────────────────────────────────────
 const StarIcon: FC = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
     <path
@@ -15,19 +14,15 @@ const StarIcon: FC = () => (
   </svg>
 );
 
-// ── Section ────────────────────────────────────────────────────────────────────
 const BestProductsSection: FC = () => {
   const { products } = useProducts();
 
   return (
     <section className="py-5">
-      {/* Header */}
       <div className="flex items-center gap-1.5 mb-4">
         <StarIcon />
         <h2 className="text-b-15 font-semibold text-gray-900">실시간 베스트</h2>
       </div>
-
-      {/* Horizontal scroll */}
       <div className="flex items-start gap-[22px] overflow-x-auto scrollbar-hide pb-1">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />

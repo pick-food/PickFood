@@ -1,15 +1,21 @@
-// ─── Navigation ───────────────────────────────────────────────────────────────
-export interface NavTab {
-  id: string;
-  label: string;
-}
-
-// ─── Category ─────────────────────────────────────────────────────────────────
+// ─── Category ──────────────────────────────────────────────────────────────────
 export interface Category {
   id: string;
   label: string;
-  emoji: string;         // emoji used as placeholder icon
-  bgColor: string;       // Tailwind bg class for the circle
+  emoji: string;
+  bgColor: string;
+}
+
+// ─── Feature Card (OCR / 필터링 / 추천) ────────────────────────────────────────
+export interface FeatureCard {
+  id: string;
+  number: string;
+  title: string;
+  description: string;
+  descriptionColor: string; // Tailwind text class
+  imageSrc: string;
+  gradientFrom: string;
+  gradientTo: string;
 }
 
 // ─── Product ──────────────────────────────────────────────────────────────────
@@ -19,12 +25,13 @@ export interface Product {
   id: string;
   brand: string;
   name: string;
-  price: number;         // 할인 적용 후 최종 가격
+  price: number;
   originalPrice: number;
-  discount: number;      // %
+  discount: number;
   origin: string;
   badge: BadgeType;
-  gradientFrom: string;  // Tailwind gradient-from class (image placeholder)
+  imageSrc: string;
+  gradientFrom: string;
   gradientTo: string;
 }
 
@@ -32,10 +39,11 @@ export interface Product {
 export interface HeroBanner {
   id: string;
   tag: string;
-  tagBg: string;         // Tailwind bg class
+  tagBg: string;
   title: string;
   subtitle: string;
   ctaText: string;
+  imageSrc: string;
   gradientFrom: string;
   gradientTo: string;
 }
@@ -45,6 +53,7 @@ export interface SideBanner {
   tag: string;
   tagBg: string;
   title: string;
+  imageSrc: string;
   gradientFrom: string;
   gradientTo: string;
 }
@@ -54,7 +63,8 @@ export interface AdBanner {
   brand: string;
   productName: string;
   highlight: string;
-  highlightColor: string; // Tailwind text class
+  highlightColor: string;
+  imageSrc: string;
   gradientFrom: string;
   gradientTo: string;
 }
@@ -66,6 +76,7 @@ export interface PromoBanner {
   title: string;
   ctaText: string;
   ctaColor: string;
+  imageSrc: string;
   gradientFrom: string;
   gradientTo: string;
 }

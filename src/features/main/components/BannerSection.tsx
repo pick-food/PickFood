@@ -2,22 +2,25 @@ import type { FC } from "react";
 import { useBanners } from "../hooks/useBanners";
 import type { AdBanner, HeroBanner, PromoBanner, SideBanner } from "../models/types";
 
-// ── Arrow icon ─────────────────────────────────────────────────────────────────
+function bgStyle(imageSrc: string): React.CSSProperties {
+  if (imageSrc) {
+    return { backgroundImage: `url(${imageSrc})`, backgroundSize: "cover", backgroundPosition: "center" };
+  }
+  return {};
+}
+function bgClass(imageSrc: string, from: string, to: string) {
+  return imageSrc ? "" : `bg-gradient-to-br ${from} ${to}`;
+}
+
+// ── Arrow ──────────────────────────────────────────────────────────────────────
 const ArrowRight: FC<{ className?: string }> = ({ className }) => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className={className}>
-    <path
-      d="M2.625 7H11.375M7.875 3.5L11.375 7L7.875 10.5"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    <path d="M2.625 7H11.375M7.875 3.5L11.375 7L7.875 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
-// ── AD badge ───────────────────────────────────────────────────────────────────
 const AdBadge: FC = () => (
-  <span className="inline-flex items-center px-[9px] py-1 rounded-xs text-[10px] font-medium leading-[140%] text-warn-light bg-white/30 border border-gray-200">
+  <span className="inline-flex items-center px-[9px] py-1 rounded-xs text-[10px] font-medium text-warn-light bg-white/30 border border-gray-200">
     AD
   </span>
 );
@@ -25,8 +28,8 @@ const AdBadge: FC = () => (
 // ── Hero Banner ────────────────────────────────────────────────────────────────
 const HeroBannerCard: FC<{ b: HeroBanner }> = ({ b }) => (
   <div
-    className={`relative w-full rounded-lg overflow-hidden bg-gradient-to-br ${b.gradientFrom} ${b.gradientTo}`}
-    style={{ height: 243 }}
+    className={`relative w-full rounded-lg overflow-hidden ${bgClass(b.imageSrc, b.gradientFrom, b.gradientTo)}`}
+    style={{ height: 243, ...bgStyle(b.imageSrc) }}
   >
     <div className="absolute inset-0 bg-black/40" />
     <div className="relative z-10 flex flex-col justify-between h-full p-6">
@@ -50,8 +53,8 @@ const HeroBannerCard: FC<{ b: HeroBanner }> = ({ b }) => (
 // ── Side Banner ────────────────────────────────────────────────────────────────
 const SideBannerCard: FC<{ b: SideBanner }> = ({ b }) => (
   <div
-    className={`relative rounded-base overflow-hidden bg-gradient-to-br ${b.gradientFrom} ${b.gradientTo} w-full`}
-    style={{ height: 120 }}
+    className={`relative rounded-base overflow-hidden w-full ${bgClass(b.imageSrc, b.gradientFrom, b.gradientTo)}`}
+    style={{ height: 120, ...bgStyle(b.imageSrc) }}
   >
     <div className="absolute inset-0 bg-black/40" />
     <div className="relative z-10 flex flex-col justify-end h-full p-4">
@@ -68,8 +71,8 @@ const SideBannerCard: FC<{ b: SideBanner }> = ({ b }) => (
 // ── Ad Banner ─────────────────────────────────────────────────────────────────
 const AdBannerCard: FC<{ b: AdBanner }> = ({ b }) => (
   <div
-    className={`relative rounded-base overflow-hidden flex-1 bg-gradient-to-br ${b.gradientFrom} ${b.gradientTo}`}
-    style={{ height: 91 }}
+    className={`relative rounded-base overflow-hidden flex-1 ${bgClass(b.imageSrc, b.gradientFrom, b.gradientTo)}`}
+    style={{ height: 91, ...bgStyle(b.imageSrc) }}
   >
     <div className="absolute inset-0 bg-black/40" />
     <div className="relative z-10 flex flex-col justify-between h-full p-3">
@@ -88,8 +91,8 @@ const AdBannerCard: FC<{ b: AdBanner }> = ({ b }) => (
 // ── Promo Banner ──────────────────────────────────────────────────────────────
 const PromoBannerCard: FC<{ b: PromoBanner }> = ({ b }) => (
   <div
-    className={`relative rounded-base overflow-hidden flex-1 bg-gradient-to-br ${b.gradientFrom} ${b.gradientTo}`}
-    style={{ height: 130 }}
+    className={`relative rounded-base overflow-hidden flex-1 ${bgClass(b.imageSrc, b.gradientFrom, b.gradientTo)}`}
+    style={{ height: 130, ...bgStyle(b.imageSrc) }}
   >
     <div className="absolute inset-0 bg-black/40" />
     <div className="relative z-10 flex flex-col justify-between h-full p-4">
@@ -105,13 +108,13 @@ const PromoBannerCard: FC<{ b: PromoBanner }> = ({ b }) => (
   </div>
 );
 
-// ── BannerSection — useBanners는 여기서만 호출 ─────────────────────────────────
+// ── BannerSection ──────────────────────────────────────────────────────────────
 const BannerSection: FC = () => {
-  const { heroBanner, sideBanners, adBanners, promoBanners } = useBanners();
+  const { heroBanner, sideBanners, adBanners } = useBanners();
 
   return (
     <section className="flex flex-col gap-3">
-      {/* Row 1: Hero + Side */}
+      {/* Row 1: Hero(70%) + Side(30%) */}
       <div className="flex gap-3">
         <div className="flex-[7]">
           <HeroBannerCard b={heroBanner} />
@@ -123,20 +126,26 @@ const BannerSection: FC = () => {
         </div>
       </div>
 
-      {/* Row 2: Ad banners */}
+      {/* Row 2: Ad banners (3개) */}
       <div className="flex gap-3">
         {adBanners.map((b) => (
           <AdBannerCard key={b.id} b={b} />
         ))}
       </div>
-
-      {/* Row 3: Promo banners */}
-      <div className="flex gap-3">
-        {promoBanners.map((b) => (
-          <PromoBannerCard key={b.id} b={b} />
-        ))}
-      </div>
     </section>
+  );
+};
+
+// ── PromoBannerSection (실시간 베스트 하단) ────────────────────────────────────
+export const PromoBannerSection: FC = () => {
+  const { promoBanners } = useBanners();
+
+  return (
+    <div className="flex gap-3">
+      {promoBanners.map((b) => (
+        <PromoBannerCard key={b.id} b={b} />
+      ))}
+    </div>
   );
 };
 
