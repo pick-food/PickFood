@@ -1,0 +1,68 @@
+import type { Product } from "../models/types";
+
+const PRODUCTS: Product[] = [
+  {
+    id: "1",
+    brand: "몰가홀푸드",
+    name: "비건 귀리 그래놀라 500g",
+    price: 12_900,
+    originalPrice: 15_200,
+    discount: 15,
+    origin: "국내산",
+    badge: "BEST",
+    gradientFrom: "from-amber-200",
+    gradientTo: "to-yellow-300",
+  },
+  {
+    id: "2",
+    brand: "CJ제일제당",
+    name: "당뇨케어 현미밥 200g × 6",
+    price: 8_400,
+    originalPrice: 10_500,
+    discount: 20,
+    origin: "국내산",
+    badge: "BEST",
+    gradientFrom: "from-green-200",
+    gradientTo: "to-emerald-300",
+  },
+  {
+    id: "3",
+    brand: "풀무원",
+    name: "글루텐프리 파스타 400g",
+    price: 6_800,
+    originalPrice: 6_800,
+    discount: 0,
+    origin: "국내산",
+    badge: "SALE",
+    gradientFrom: "from-orange-200",
+    gradientTo: "to-red-200",
+  },
+  {
+    id: "4",
+    brand: "남양유업",
+    name: "무가당 그릭요거트 400g",
+    price: 4_900,
+    originalPrice: 5_450,
+    discount: 10,
+    origin: "국내산",
+    badge: "BEST",
+    gradientFrom: "from-sky-100",
+    gradientTo: "to-blue-200",
+  },
+  {
+    id: "5",
+    brand: "정식품",
+    name: "유기농 검정콩두유 190ml × 6",
+    price: 7_600,
+    originalPrice: 9_270,
+    discount: 18,
+    origin: "국내산",
+    badge: "BEST",
+    gradientFrom: "from-purple-200",
+    gradientTo: "to-violet-300",
+  },
+];
+
+export function useProducts() {
+  return { products: PRODUCTS };
+}
