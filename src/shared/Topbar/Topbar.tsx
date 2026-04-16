@@ -10,6 +10,7 @@ interface TopBarProps {
   onLogin?:   () => void;
   onSignup?:  () => void;
   onSupport?: () => void;
+  isLoginActive?: boolean;
 }
 
 export function TopBar({
@@ -17,6 +18,7 @@ export function TopBar({
   onLogin,
   onSignup,
   onSupport,
+  isLoginActive,
 }: TopBarProps) {
   const { search, filter, activeTab, setActiveTab, tabs } = useTopBar(onSearch);
 
@@ -39,6 +41,7 @@ export function TopBar({
             onLogin={onLogin}
             onSignup={onSignup}
             onSupport={onSupport}
+            isLoginActive={isLoginActive} 
           />
         </div>
       </div>
