@@ -1,41 +1,77 @@
 import { useState } from "react";
 import { TopBar } from "./shared/Topbar";
 import { Footer } from "./shared/Footer";
-import MainPage   from "./features/main/components/MainPage";
-import LoginPage  from "./features/auth/components/LoginPage";
-import SignupPage from "./features/auth/components/SignupPage";
+import MainPage           from "./features/main/components/MainPage";
+import LoginPage          from "./features/auth/components/LoginPage";
+import SignupPage         from "./features/auth/components/SignupPage";
+import SignupCompletePage from "./features/auth/components/SignupCompletePage";
+import FindIdPage         from "./features/auth/components/FindIdPage";
+import FindPasswordPage   from "./features/auth/components/FindPasswordPage";
+import { useAuth }        from "./features/auth/store/useAuth";
 
-type Page = "main" | "login" | "signup" | "findId" | "findPassword";
+type Page = "main" | "login" | "signup" | "signupComplete" | "findId" | "findPassword";
 
-function App() {
-  const [page, setPage] = useState<Page>("main");
+function AppInner() {
+  const { isLoggedIn } = useAuth();
+  const [page, setPage]                 = useState<Page>("main");
+  const [activeNavTab, setActiveNavTab] = useState<string | null>(null);
+
+  function goTo(p: Page) {
+    setPage(p);
+    if (p !== "main") setActiveNavTab(null);
+  }
+
+  function handleNavTabChange(id: string) {
+    setActiveNavTab(id);
+    if (id === "all") goTo("main");
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
       <TopBar
-        onLogin={() => setPage("login")}
-        onSignup={() => setPage("signup")}
+        onLogin={() => goTo("login")}
+        onSignup={() => goTo("signup")}
         isLoginActive={page === "login"}
         isSignupActive={page === "signup"}
+        isLoggedIn={isLoggedIn}
+        activeNavTab={activeNavTab}
+        onNavTabChange={handleNavTabChange}
       />
       <main className="flex-1 flex flex-col">
-        {page === "main"   && <MainPage />}
-        {page === "login"  && (
+        {page === "main"           && <MainPage />}
+        {page === "login"          && (
           <LoginPage
-            onSignup={() => setPage("signup")}
-            onFindId={() => setPage("findId")}
-            onFindPassword={() => setPage("findPassword")}
+            onSignup={() => goTo("signup")}
+            onFindId={() => goTo("findId")}
+            onFindPassword={() => goTo("findPassword")}
           />
         )}
-        {page === "signup" && (
-          <SignupPage onBack={() => setPage("login")} />
+        {page === "signup"         && (
+          <SignupPage
+            onBack={() => goTo("login")}
+            onComplete={() => goTo("signupComplete")}
+          />
         )}
-        {page === "findId"       && <div>아이디 찾기 (준비 중)</div>}
-        {page === "findPassword" && <div>비밀번호 찾기 (준비 중)</div>}
+        {page === "signupComplete" && (
+          <SignupCompletePage onLogin={() => goTo("login")} />
+        )}
+        {page === "findId"         && (
+          <FindIdPage
+            onLogin={() => goTo("login")}
+            onSignup={() => goTo("signup")}
+            onFindPassword={() => goTo("findPassword")}
+          />
+        )}
+        {page === "findPassword"   && (
+          <FindPasswordPage
+            onLogin={() => goTo("login")}
+            onSignup={() => goTo("signup")}
+          />
+        )}
       </main>
       <Footer />
     </div>
   );
 }
 
-export default App;
+export default AppInner;

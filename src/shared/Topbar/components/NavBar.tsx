@@ -2,7 +2,7 @@ import type { NavTab, NavTabId } from '../models/navigation.model';
 
 interface NavBarProps {
   tabs: NavTab[];
-  activeTab: NavTabId;
+  activeTab: string | null;          // null이면 전부 회색
   onTabChange: (id: NavTabId) => void;
 }
 
@@ -10,7 +10,7 @@ export function NavBar({ tabs, activeTab, onTabChange }: NavBarProps) {
   return (
     <nav className="flex items-center gap-5">
       {tabs.map((tab) => {
-        const active = tab.id === activeTab;
+        const active = activeTab !== null && tab.id === activeTab;
         return (
           <button
             key={tab.id}

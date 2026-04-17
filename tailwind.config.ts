@@ -49,6 +49,8 @@ export default {
         black:  "#000000",
         naver:  "#03A94D",
         kakao:  "#FEE500",
+        red: "#FF0000",
+        green : "#00C900",
         
         primary: {
           DEFAULT: "#8B3A1A",

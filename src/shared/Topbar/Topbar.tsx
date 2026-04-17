@@ -1,16 +1,20 @@
 import logo from '/logo.svg';
-import { useTopBar }    from './hooks/useTopBar';
-import { SearchBar }    from './components/SearchBar';
-import { FilterBar }    from './components/FilterBar';
-import { NavBar }       from './components/NavBar';
-import { UserActions }  from './components/UserActions';
+import { useTopBar }   from './hooks/useTopBar';
+import { SearchBar }   from './components/SearchBar';
+import { FilterBar }   from './components/FilterBar';
+import { NavBar }      from './components/NavBar';
+import { UserActions } from './components/UserActions';
 
 interface TopBarProps {
-  onSearch?:  (query: string) => void;
-  onLogin?:   () => void;
-  onSignup?:  () => void;
-  onSupport?: () => void;
-  isLoginActive?: boolean;
+  onSearch?:       (query: string) => void;
+  onLogin?:        () => void;
+  onSignup?:       () => void;
+  onSupport?:      () => void;
+  isLoginActive?:  boolean;
+  isSignupActive?: boolean;
+  isLoggedIn:      boolean;
+  activeNavTab:    string | null;
+  onNavTabChange:  (id: string) => void;
 }
 
 export function TopBar({
@@ -19,8 +23,12 @@ export function TopBar({
   onSignup,
   onSupport,
   isLoginActive,
+  isSignupActive,
+  isLoggedIn,
+  activeNavTab,
+  onNavTabChange,
 }: TopBarProps) {
-  const { search, filter, activeTab, setActiveTab, tabs } = useTopBar(onSearch);
+  const { search, filter, tabs } = useTopBar(onSearch);
 
   return (
     <header className="w-full sticky top-0 z-50">
@@ -41,7 +49,8 @@ export function TopBar({
             onLogin={onLogin}
             onSignup={onSignup}
             onSupport={onSupport}
-            isLoginActive={isLoginActive} 
+            isLoginActive={isLoginActive}
+            isSignupActive={isSignupActive}
           />
         </div>
       </div>
@@ -56,15 +65,21 @@ export function TopBar({
       {/* 구분선 */}
       <div className="w-full h-px bg-gray-200" />
 
-      {/* Row 3: 카테고리 탭 */}
-      <div className="bg-white px-4">
-        <div className="max-w-[1200px] mx-auto">
-          <NavBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-        </div>
-      </div>
-
-      {/* 구분선 */}
-      <div className="w-full h-px bg-gray-200" />
+      {/* Row 3: 카테고리 탭 — 로그인 시에만 표시 */}
+      {isLoggedIn && (
+        <>
+          <div className="bg-white px-4">
+            <div className="max-w-[1200px] mx-auto">
+              <NavBar
+                tabs={tabs}
+                activeTab={activeNavTab}
+                onTabChange={onNavTabChange}
+              />
+            </div>
+          </div>
+          <div className="w-full h-px bg-gray-200" />
+        </>
+      )}
 
     </header>
   );
