@@ -14,9 +14,6 @@ const FindPasswordPage: FC<FindPasswordPageProps> = ({ onLogin, onSignup }) => {
     handleSubmit,
   } = useFindPassword();
 
-  const inputBase =
-    "flex-1 min-w-0 h-[38px] px-[14px] border border-gray-100 rounded-xs text-[12px] font-medium placeholder:text-gray-300 focus:outline-none focus:border-primary";
-
   const FieldLabel: FC<{ label: string }> = ({ label }) => (
     <p className="text-[12px] font-medium text-gray-900 mb-[6px]">
       {label}

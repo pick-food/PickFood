@@ -16,7 +16,7 @@ const FindIdPage: FC<FindIdPageProps> = ({ onLogin, onSignup, onFindPassword }) 
     phoneStatus, sendPhoneCode, verifyPhoneCode,
     result, foundId,
     timeLeft, formatTime,
-    handleSubmit, reset,
+    handleSubmit,
   } = useFindId();
 
   const inputBase =
