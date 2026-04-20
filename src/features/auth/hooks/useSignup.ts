@@ -12,7 +12,7 @@ import { useAuth } from "../store/useAuth";
 type NicknameStatus = "idle" | "available" | "duplicate";
 type VerifyStatus   = "idle" | "sent" | "verified";
 
-export function useSignup() {
+export function useSignup(onComplete?: () => void) {
   const { login: setAuth } = useAuth();
 
   const [name,           setName]           = useState("");
@@ -78,6 +78,17 @@ export function useSignup() {
   function verifyPhoneCode() { setPhoneStatus("verified"); }
 
   async function handleSubmit() {
+    // 유효성 검사
+    if (!name) { setError("이름을 입력해주세요."); return; }
+    if (!nickname) { setError("닉네임을 입력해주세요."); return; }
+    if (nicknameStatus !== "available") { setError("닉네임 중복 검사를 해주세요."); return; }
+    if (!email) { setError("이메일을 입력해주세요."); return; }
+    if (emailStatus !== "verified") { setError("이메일 인증을 완료해주세요."); return; }
+    if (!password) { setError("비밀번호를 입력해주세요."); return; }
+    if (!passwordValid) { setError("비밀번호 형식이 올바르지 않습니다."); return; }
+    if (!passwordMatch) { setError("비밀번호가 일치하지 않습니다."); return; }
+    if (!termsAgreed) { setError("약관 동의에 동의해주세요."); return; }
+
     setLoading(true);
     setError(null);
     try {
@@ -90,10 +101,11 @@ export function useSignup() {
         password,
         name,
         nickname,
-        phone: phone.replace(/-/g, ""),
+        phone: phone ? phone.replace(/-/g, "") : "01000000000", // 임시 더미값
         term_ids: requiredTermIds,
       });
       setAuth(tokens);
+      onComplete?.(); // ← 성공 후 완료 페이지로
     } catch {
       setError("회원가입에 실패했습니다. 다시 시도해주세요.");
     } finally {

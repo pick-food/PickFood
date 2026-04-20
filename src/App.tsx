@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TopBar } from "./shared/Topbar";
 import { Footer } from "./shared/Footer";
 import MainPage           from "./features/main/components/MainPage";
@@ -14,7 +14,15 @@ type Page = "main" | "login" | "signup" | "signupComplete" | "findId" | "findPas
 function AppInner() {
   const { isLoggedIn } = useAuth();
   const [page, setPage]                 = useState<Page>("main");
-  const [activeNavTab, setActiveNavTab] = useState<string | null>(null);
+  const [activeNavTab, setActiveNavTab] = useState<string | null>("all");
+
+  // 로그인 상태 변경 시 자동으로 main으로 이동
+  useEffect(() => {
+    if (isLoggedIn) {
+      setPage("main");
+      setActiveNavTab("all");
+    }
+  }, [isLoggedIn]);
 
   function goTo(p: Page) {
     setPage(p);
@@ -41,6 +49,7 @@ function AppInner() {
         {page === "main"           && <MainPage />}
         {page === "login"          && (
           <LoginPage
+            onSuccess={() => goTo("main")}
             onSignup={() => goTo("signup")}
             onFindId={() => goTo("findId")}
             onFindPassword={() => goTo("findPassword")}

@@ -12,6 +12,7 @@ export async function checkNickname(nickname: string): Promise<boolean> {
     "/auth/check-nickname",
     { params: { nickname } }
   );
+  console.log("닉네임 검사 응답:", res.data);
   return res.data.data.available;
 }
 

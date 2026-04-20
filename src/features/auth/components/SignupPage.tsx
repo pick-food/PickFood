@@ -91,17 +91,15 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
     emailCode, setEmailCode,
     password, setPassword,
     confirmPw, setConfirmPw,
-    phone, setPhone,
-    phoneCode, setPhoneCode,
     termsAgreed, setTermsAgreed,
     showPassword, setShowPassword,
     showConfirmPw, setShowConfirmPw,
     nicknameStatus, checkNickname,
     emailStatus, sendEmailCode, verifyEmailCode,
-    phoneStatus, sendPhoneCode, verifyPhoneCode,
     passwordValid, passwordMatch, passwordMismatch,
+    loading, error,
     handleSubmit,
-  } = useSignup();
+  } = useSignup(onComplete);
 
   const inputBase =
     "flex-1 min-w-0 h-[38px] px-[14px] border border-gray-100 rounded-xs text-[12px] font-medium placeholder:text-gray-300 focus:outline-none focus:border-primary";
@@ -231,7 +229,7 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
           )}
         </div>
 
-        {/* 휴대폰 번호 */}
+        {/* 휴대폰 번호 - 백엔드 미구현으로 임시 숨김
         <div className={fieldGap}>
           <FieldLabel label="휴대폰 번호" />
           <div className="flex items-center gap-[6px]">
@@ -264,7 +262,7 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
               }
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* 약관 동의 */}
         <div className="flex items-center gap-[8px] mb-[20px]">
@@ -292,13 +290,19 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
           />
         )}
 
-        {/* 회원가입 버튼 */}
+        {/* 에러 메시지 */}
+        {error && (
+          <p className="text-[11px] font-medium text-[#FF0000] mb-[8px] text-center">
+            {error}
+          </p>
+        )}
+
         <button
           type="button"
-          onClick={onComplete ?? handleSubmit}
+          onClick={handleSubmit}  // ← onComplete ?? handleSubmit 에서 변경
           className="w-full h-[44px] bg-primary rounded-xs text-[13px] font-medium text-white hover:bg-primary-dark transition-colors"
         >
-          회원가입
+          {loading ? "처리 중..." : "회원가입"}
         </button>
 
       </div>

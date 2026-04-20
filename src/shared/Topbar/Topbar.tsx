@@ -51,6 +51,7 @@ export function TopBar({
             onSupport={onSupport}
             isLoginActive={isLoginActive}
             isSignupActive={isSignupActive}
+            isLoggedIn={isLoggedIn}
           />
         </div>
       </div>
