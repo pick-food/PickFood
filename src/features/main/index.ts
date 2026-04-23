@@ -8,7 +8,7 @@ export { default as ProductCard } from "./components/ProductCard";
 
 export { useFeatureCards } from "./hooks/useFeatureCards";
 export { useCategories } from "./hooks/useCategories";
-export { useProducts } from "./hooks/useProducts";
+export { useProducts } from "../product/hooks/useProducts";
 export { useBanners } from "./hooks/useBanners";
 
 export type * from "./models/types";
