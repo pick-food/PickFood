@@ -7,16 +7,25 @@ import SignupPage         from "./features/auth/components/SignupPage";
 import SignupCompletePage from "./features/auth/components/SignupCompletePage";
 import FindIdPage         from "./features/auth/components/FindIdPage";
 import FindPasswordPage   from "./features/auth/components/FindPasswordPage";
+import ProductPage        from "./features/product/components/ProductPage";
+import ProductDetailPage  from "./features/product/components/ProductDetailPage";
 import { useAuth }        from "./features/auth/store/useAuth";
+import type { Product }   from "./features/product/models/type";
 
-type Page = "main" | "login" | "signup" | "signupComplete" | "findId" | "findPassword";
+type Page = "main" | "login" | "signup" | "signupComplete" | "findId" | "findPassword" | "product";
+
+// 페이지 → activeNavTab 매핑
+const PAGE_TO_TAB: Partial<Record<Page, string>> = {
+  main:    "all",
+  product: "product",
+};
 
 function AppInner() {
   const { isLoggedIn } = useAuth();
-  const [page, setPage]                 = useState<Page>("main");
-  const [activeNavTab, setActiveNavTab] = useState<string | null>("all");
+  const [page, setPage]                       = useState<Page>("main");
+  const [activeNavTab, setActiveNavTab]       = useState<string | null>("all");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  // 로그인 상태 변경 시 자동으로 main으로 이동
   useEffect(() => {
     if (isLoggedIn) {
       setPage("main");
@@ -26,12 +35,19 @@ function AppInner() {
 
   function goTo(p: Page) {
     setPage(p);
-    if (p !== "main") setActiveNavTab(null);
+    setSelectedProduct(null);
+    // 페이지에 대응하는 탭이 있으면 설정, 없으면 null (로그인 등)
+    setActiveNavTab(PAGE_TO_TAB[p] ?? null);
   }
 
   function handleNavTabChange(id: string) {
     setActiveNavTab(id);
-    if (id === "all") goTo("main");
+    if (id === "all")     goTo("main");
+    if (id === "product") goTo("product");
+  }
+
+  function handleProductClick(product: Product) {
+    setSelectedProduct(product);
   }
 
   return (
@@ -46,39 +62,57 @@ function AppInner() {
         onNavTabChange={handleNavTabChange}
       />
       <main className="flex-1 flex flex-col">
-        {page === "main"           && <MainPage />}
-        {page === "login"          && (
-          <LoginPage
-            onSuccess={() => goTo("main")}
-            onSignup={() => goTo("signup")}
-            onFindId={() => goTo("findId")}
-            onFindPassword={() => goTo("findPassword")}
-          />
-        )}
-        {page === "signup"         && (
-          <SignupPage
-            onBack={() => goTo("login")}
-            onComplete={() => goTo("signupComplete")}
-          />
-        )}
-        {page === "signupComplete" && (
-          <SignupCompletePage onLogin={() => goTo("login")} />
-        )}
-        {page === "findId"         && (
-          <FindIdPage
-            onLogin={() => goTo("login")}
-            onSignup={() => goTo("signup")}
-            onFindPassword={() => goTo("findPassword")}
-          />
-        )}
-        {page === "findPassword"   && (
-          <FindPasswordPage
-            onLogin={() => goTo("login")}
-            onSignup={() => goTo("signup")}
-          />
+        {selectedProduct ? (
+          <>
+            <ProductDetailPage
+              product={selectedProduct}
+              onBack={() => setSelectedProduct(null)}
+            />
+            <div className="mt-[30px]">
+              <Footer />
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col">
+            {page === "main"           && <MainPage onProductClick={handleProductClick} />}
+            {page === "login"          && (
+              <LoginPage
+                onSignup={() => goTo("signup")}
+                onFindId={() => goTo("findId")}
+                onFindPassword={() => goTo("findPassword")}
+              />
+            )}
+            {page === "signup"         && (
+              <SignupPage
+                onBack={() => goTo("login")}
+                onComplete={() => goTo("signupComplete")}
+              />
+            )}
+            {page === "signupComplete" && (
+              <SignupCompletePage onLogin={() => goTo("login")} />
+            )}
+            {page === "findId"         && (
+              <FindIdPage
+                onLogin={() => goTo("login")}
+                onSignup={() => goTo("signup")}
+                onFindPassword={() => goTo("findPassword")}
+              />
+            )}
+            {page === "findPassword"   && (
+              <FindPasswordPage
+                onLogin={() => goTo("login")}
+                onSignup={() => goTo("signup")}
+              />
+            )}
+            {page === "product"        && (
+              <ProductPage onProductClick={handleProductClick} />
+            )}
+            <div className="mt-[30px]">
+              <Footer />
+            </div>
+          </div>
         )}
       </main>
-      <Footer />
     </div>
   );
 }

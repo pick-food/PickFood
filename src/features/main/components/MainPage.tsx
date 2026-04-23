@@ -5,32 +5,32 @@ import FeatureCards from "./FeatureCards";
 import CategorySection from "./CategorySection";
 import BannerSection, { PromoBannerSection } from "./BannerSection";
 import BestProductsSection from "./BestProductsSection";
+import type { Product } from "../../product/models/type";
 
-const MainPage: FC = () => {
+interface MainPageProps {
+  onProductClick?: (product: Product) => void;
+}
+
+const MainPage: FC<MainPageProps> = ({ onProductClick }) => {
   const { isLoggedIn } = useAuth();
 
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-[1200px] mx-auto px-4 flex flex-col gap-5 py-5">
 
-        {/* 비로그인 시에만 표시 */}
         {!isLoggedIn && <HeroSection />}
         {!isLoggedIn && <FeatureCards />}
 
-        {/* ③ 카테고리 */}
         <CategorySection />
 
         <hr className="border-t border-border-mid" />
 
-        {/* ④ 배너 영역 */}
         <BannerSection />
 
         <hr className="border-t border-border-mid" />
 
-        {/* ⑤ 실시간 베스트 */}
-        <BestProductsSection />
+        <BestProductsSection onProductClick={onProductClick} />
 
-        {/* ⑥ 프로모 배너 */}
         <PromoBannerSection />
 
       </div>

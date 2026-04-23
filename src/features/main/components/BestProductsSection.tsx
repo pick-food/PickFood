@@ -1,6 +1,11 @@
 import type { FC } from "react";
-import { useProducts } from "../hooks/useProducts";
-import ProductCard from "./ProductCard";
+import { useProducts } from "../../product/hooks/useProducts";
+import ProductCard from "../../product/components/ProductCard";
+import type { Product } from "../../product/models/type";
+
+interface BestProductsSectionProps {
+  onProductClick?: (product: Product) => void;
+}
 
 const StarIcon: FC = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -14,7 +19,7 @@ const StarIcon: FC = () => (
   </svg>
 );
 
-const BestProductsSection: FC = () => {
+const BestProductsSection: FC<BestProductsSectionProps> = ({ onProductClick }) => {
   const { products } = useProducts();
 
   return (
@@ -25,7 +30,11 @@ const BestProductsSection: FC = () => {
       </div>
       <div className="flex items-start gap-[22px] overflow-x-auto scrollbar-hide pb-1">
         {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard
+            key={product.id}
+            product={product}
+            onClick={() => onProductClick?.(product)}
+          />
         ))}
       </div>
     </section>

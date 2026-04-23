@@ -1,35 +1,22 @@
+// src/features/main/models/types.ts
+
+// Product 타입은 product에서 가져옴
+export type { Product, BadgeType } from "../../product/models/type";
+
 // ─── Category ──────────────────────────────────────────────────────────────────
 export interface Category {
   id: string;
   label: string;
-  emoji: string;
-  bgColor: string;
+  icon: string;
 }
 
-// ─── Feature Card (OCR / 필터링 / 추천) ────────────────────────────────────────
+// ─── Feature Card ──────────────────────────────────────────────────────────────
 export interface FeatureCard {
   id: string;
   number: string;
   title: string;
   description: string;
-  descriptionColor: string; // Tailwind text class
-  imageSrc: string;
-  gradientFrom: string;
-  gradientTo: string;
-}
-
-// ─── Product ──────────────────────────────────────────────────────────────────
-export type BadgeType = "BEST" | "SALE" | "NEW";
-
-export interface Product {
-  id: string;
-  brand: string;
-  name: string;
-  price: number;
-  originalPrice: number;
-  discount: number;
-  origin: string;
-  badge: BadgeType;
+  descriptionColor: string;
   imageSrc: string;
   gradientFrom: string;
   gradientTo: string;
