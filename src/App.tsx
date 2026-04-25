@@ -47,6 +47,10 @@ function AppInner() {
   }
 
   function handleProductClick(product: Product) {
+    if (!isLoggedIn) {
+      goTo("login");
+      return;
+    }
     setSelectedProduct(product);
   }
 

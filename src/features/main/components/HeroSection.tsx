@@ -14,8 +14,9 @@ const HeroSection: FC = () => {
       <div className="absolute inset-0 bg-black/40 rounded-[20px]" />
 
       <div className="relative z-10 flex flex-col justify-end h-full px-[53px] pb-[46px] gap-4">
-        <h1 className="text-[40px] font-semibold leading-[140%] text-[#F0F0F0] max-w-[326px]">
-          식품 알레르기, 이제 걱정 없이 고르세요
+        <h1 className="text-[40px] font-semibold leading-[140%] text-[#F0F0F0]">
+          식품 알레르기,<br />
+          이제 걱정 없이 고르세요
         </h1>
         <p className="text-b-16 font-semibold text-warn-tagLight max-w-[391px]">
           복잡한 성분표, 직접 읽지 마세요. OCR로 자동 분석하고 알레르기 성분은 미리 걸러드립니다.
