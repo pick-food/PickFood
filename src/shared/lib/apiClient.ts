@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { type InternalAxiosRequestConfig, type AxiosResponse, type AxiosError } from "axios";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "https://api.pickfood.co.kr";
 
@@ -9,7 +9,7 @@ export const apiClient = axios.create({
 });
 
 // ── Request interceptor — access token 자동 주입 ──────────────────────────────
-apiClient.interceptors.request.use((config) => {
+apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem("access_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
@@ -17,8 +17,8 @@ apiClient.interceptors.request.use((config) => {
 
 // ── Response interceptor — 에러 공통 처리 ────────────────────────────────────
 apiClient.interceptors.response.use(
-  (res) => res,
-  (error) => {
+  (res: AxiosResponse) => res,
+  (error: AxiosError) => {
     const status = error.response?.status;
     if (status === 401) {
       // 토큰 만료 → 로그아웃 처리
