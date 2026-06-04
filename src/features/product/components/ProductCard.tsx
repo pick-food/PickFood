@@ -1,102 +1,193 @@
 import type { FC } from "react";
 import { useState } from "react";
 import type { Product } from "../models/type";
-import cartIcon from "@/assets/icons/shoppingcart.png";
 import Toast    from "../../../shared/components/Toast";
 import { useToast } from "../hooks/useToast";
+
+// Mock allergens per product (keyed by product id) — replace with real API data when available
+const PRODUCT_ALLERGENS: Record<string, string[]> = {
+  "1": [],
+  "2": ["대두"],
+  "3": ["밀"],
+  "4": ["우유"],
+  "5": ["대두"],
+};
+// User's active allergen profile (replace with auth store data when available)
+const USER_ACTIVE_ALLERGENS: string[] = [];
 
 interface ProductCardProps {
   product: Product;
   onClick?: () => void;
+  /** Override allergy hits — e.g. from a logged-in user's profile */
+  allergyHits?: string[];
 }
 
-// 별점 SVG (filled / empty)
-const StarFilled: FC = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="#FEE500">
+/* ── 아이콘 ───────────────────────────────────────────────── */
+const StarIco = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="#E89B26">
     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
   </svg>
 );
-const StarEmpty: FC = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#AAAAAA" strokeWidth="1.5">
-    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+const CheckIco = () => (
+  <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+    <path d="M2 6l3 3 5-5" stroke="#1F4D2C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const HeartIco: FC<{ filled: boolean }> = ({ filled }) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill={filled ? '#fff' : 'none'}>
+    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
+      stroke={filled ? '#fff' : '#3A4A3F'} strokeWidth="1.8"/>
+  </svg>
+);
+const ShieldIco = () => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L4 6v6c0 5.5 3.5 10.7 8 12 4.5-1.3 8-6.5 8-12V6L12 2z" stroke="#A8E063" strokeWidth="2" strokeLinejoin="round"/>
+    <path d="M9 12l2 2 4-4" stroke="#A8E063" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
-const ProductCard: FC<ProductCardProps> = ({ product, onClick }) => {
-  const { brand, name, price, originalPrice, discountRate, rating, reviewCount, badge, badgeBg, badgeColor, imageSrc } = product;
+const BADGE_STYLE: Record<string, { bg: string; color: string }> = {
+  BEST:    { bg: '#0F1E12', color: '#A8E063' },
+  SALE:    { bg: '#1F4D2C', color: '#A8E063' },
+  NEW:     { bg: '#E89B26', color: '#fff'    },
+  deal:    { bg: '#1F4D2C', color: '#A8E063' },
+  recommended: { bg: '#0F1E12', color: '#A8E063' },
+};
 
+const ProductCard: FC<ProductCardProps> = ({ product, onClick, allergyHits: hitsProp }) => {
+  const { brand, name, price, originalPrice, discountRate, rating, reviewCount, badge, imageSrc } = product;
   const [isHearted, setIsHearted] = useState(false);
-  const [isCarted,  setIsCarted]  = useState(false);
+  const [burst,     setBurst]     = useState(false);
   const { toast, showToast } = useToast();
+
+  const badgeStyle = BADGE_STYLE[badge] ?? BADGE_STYLE.BEST;
+  const discount   = discountRate > 0 ? discountRate : (originalPrice > price ? Math.round((1 - price / originalPrice) * 100) : 0);
+
+  // Allergy warning: use prop if provided, otherwise derive from mock data
+  const hits = hitsProp ?? (PRODUCT_ALLERGENS[product.id] ?? []).filter(a => USER_ACTIVE_ALLERGENS.includes(a));
+  const isDanger = hits.length > 0;
 
   function handleHeart(e: React.MouseEvent) {
     e.stopPropagation();
+    setBurst(true);
+    setTimeout(() => setBurst(false), 400);
     const next = !isHearted;
     setIsHearted(next);
     showToast(next ? "heart" : "heartCancel");
   }
 
-  function handleCart(e: React.MouseEvent) {
-    e.stopPropagation();
-    const next = !isCarted;
-    setIsCarted(next);
-    showToast(next ? "cart" : "cartCancel");
-  }
-
-  const fullStars  = Math.floor(rating);
-  const emptyStars = 5 - fullStars;
-
   return (
     <>
       <div
-        className="w-[220px] flex-shrink-0 border border-[#DDDDDD] rounded-[10px] overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
         onClick={onClick}
+        className="pf-press pf-fade-up"
+        style={{ background: 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
       >
-        {/* 이미지 */}
-        <div className="relative w-full h-[222px] bg-gray-100">
-          <img src={imageSrc} alt={name} className="w-full h-full object-cover rounded-t-[10px]"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-          <span className="absolute top-[8px] left-[8px] px-[9px] py-[4px] rounded-[2px] text-[8px] font-semibold"
-            style={{ backgroundColor: badgeBg, color: badgeColor }}>
-            {badge}
-          </span>
-          <div className="absolute bottom-[8px] right-[8px] flex items-center gap-[4px]">
-            {/* 하트 */}
-            <button onClick={handleHeart} className="w-6 h-6 flex items-center justify-center" aria-label="찜하기">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
-                  fill={isHearted ? "#FF0000" : "none"}
-                  stroke={isHearted ? "#FF0000" : "white"}
-                  strokeWidth="1.5" />
+        {/* 이미지 영역 */}
+        <div
+          className="pf-img-zoom"
+          style={{ position: 'relative', aspectRatio: '1/1', overflow: 'hidden', borderRadius: 8, background: '#fff', border: '1px solid #ECEEE7' }}
+        >
+          <img
+            src={imageSrc}
+            alt={name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+
+          {/* 배지 */}
+          {badge === 'BEST' && (
+            <span style={{ position: 'absolute', top: 8, left: 8, background: badgeStyle.bg, color: badgeStyle.color, padding: '4px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <ShieldIco /> 맞춤픽
+            </span>
+          )}
+          {badge !== 'BEST' && (
+            <span style={{ position: 'absolute', top: 8, left: 8, background: badgeStyle.bg, color: badgeStyle.color, padding: '4px 8px', borderRadius: 4, fontSize: 11, fontWeight: 800 }}>
+              {badge === 'SALE' ? '특가' : badge}
+            </span>
+          )}
+
+          {/* 알레르기 경고 오버레이 */}
+          {isDanger && (
+            <div style={{
+              position: 'absolute', left: 8, right: 8, bottom: 8,
+              background: 'rgba(211,47,47,0.94)', color: '#fff',
+              padding: '6px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+              display: 'flex', alignItems: 'center', gap: 6,
+              backdropFilter: 'blur(6px)',
+            }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="white" strokeWidth="1.8"/>
+                <line x1="12" y1="9" x2="12" y2="13" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+                <line x1="12" y1="17" x2="12.01" y2="17" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
               </svg>
-            </button>
-            {/* 장바구니 */}
-            <button onClick={handleCart} className="w-6 h-6 flex items-center justify-center" aria-label="장바구니">
-              <img src={cartIcon} alt="" className={`w-5 h-5 ${isCarted
-                ? "[filter:invert(25%)_sepia(80%)_saturate(500%)_hue-rotate(340deg)_brightness(80%)]"
-                : "brightness-0 invert"}`} />
-            </button>
-          </div>
+              <span>{hits.join('·')} 함유</span>
+            </div>
+          )}
+
+          {/* 찜 버튼 */}
+          <button
+            onClick={handleHeart}
+            className={burst ? 'pf-heart-burst' : ''}
+            style={{
+              position: 'absolute', top: 8, right: 8,
+              width: 32, height: 32, borderRadius: 999, border: 'none',
+              background: isHearted ? '#D32F2F' : 'rgba(255,255,255,0.92)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backdropFilter: 'blur(8px)', transition: 'background 200ms',
+            }}
+            aria-label="찜하기"
+          >
+            <HeartIco filled={isHearted} />
+          </button>
         </div>
 
-        {/* 텍스트 */}
-        <div className="p-[10px] flex flex-col gap-[4px]">
-          <p className="text-[10px] font-medium text-[#999999]">{brand}</p>
-          <p className="text-[12px] font-medium text-[#333333] leading-[140%]">{name}</p>
-          {discountRate > 0 && (
-            <p className="text-[12px] font-medium text-[#999999] line-through">{originalPrice.toLocaleString()}원</p>
-          )}
-          <div className="flex items-center gap-[4px]">
-            {discountRate > 0 && <span className="text-[12px] font-medium text-[#C0392B]">{discountRate}%</span>}
-            <span className="text-[14px] font-medium text-[#333333]">{price.toLocaleString()}원</span>
+        {/* 텍스트 정보 */}
+        <div style={{ paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ fontSize: 11, color: '#6B7A6E', fontWeight: 600 }}>{brand}</div>
+          <div style={{
+            fontSize: 14, fontWeight: 500, color: '#0F1E12', lineHeight: 1.4,
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 39,
+          } as React.CSSProperties}>{name}</div>
+
+          {/* 가격 */}
+          <div style={{ marginTop: 4 }}>
+            {discount > 0 && (
+              <div style={{ fontSize: 12, color: '#9AA89D', textDecoration: 'line-through', fontVariantNumeric: 'tabular-nums' }}>
+                {originalPrice.toLocaleString()}
+              </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              {discount > 0 && (
+                <span style={{ fontSize: 17, fontWeight: 800, color: '#D32F2F', fontVariantNumeric: 'tabular-nums' }}>{discount}%</span>
+              )}
+              <span style={{ fontSize: 17, fontWeight: 800, color: '#0F1E12', letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' }}>
+                {price.toLocaleString()}<span style={{ fontSize: 13, fontWeight: 600, marginLeft: 1 }}>원</span>
+              </span>
+            </div>
           </div>
-          {/* 별점 SVG */}
-          <div className="flex items-center gap-[2px]">
-            {Array.from({ length: fullStars  }).map((_, i) => <StarFilled key={`f${i}`} />)}
-            {Array.from({ length: emptyStars }).map((_, i) => <StarEmpty  key={`e${i}`} />)}
-            <span className="text-[10px] font-medium text-[#999999] ml-1">{rating}</span>
-            <span className="text-[10px] text-[#999999]">|</span>
-            <span className="text-[10px] font-medium text-[#999999]">{reviewCount}</span>
+
+          {/* 별점 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 12 }}>
+            <StarIco />
+            <span style={{ fontWeight: 700, color: '#0F1E12', fontVariantNumeric: 'tabular-nums' }}>{rating}</span>
+            <span style={{ color: '#9AA89D' }}>· 리뷰 {reviewCount.toLocaleString()}</span>
+          </div>
+
+          {/* 배송 + 안전 태그 */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 7px', background: '#F0F6F1', color: '#1F6B45', borderRadius: 4 }}>
+              내일 도착
+            </span>
+            {isDanger ? (
+              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 7px', background: '#FEF2F2', color: '#B71C1C', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                ⚠ 주의
+              </span>
+            ) : (
+              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 7px', background: '#EAF7D4', color: '#1F4D2C', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                <CheckIco /> 안전
+              </span>
+            )}
           </div>
         </div>
       </div>

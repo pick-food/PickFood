@@ -24,17 +24,17 @@ const Toast: FC<ToastProps> = ({ toast, onNavigate }) => {
   const config = TOAST_CONFIG[toast.type];
 
   return (
-    <div className="fixed bottom-[30px] left-1/2 -translate-x-1/2 z-50 w-[400px] h-[40px] flex items-center justify-between px-[14px] bg-gray-800 border border-black rounded-xs">
-      <span className="text-[12px] font-semibold text-primary-light">{config.message}</span>
+    <div className="fixed bottom-[30px] left-1/2 -translate-x-1/2 z-50 w-[400px] h-[44px] flex items-center justify-between px-4 rounded-xl pf-scale-in" style={{ background: '#0F2E18', boxShadow: '0 8px 24px rgba(15,30,18,0.35)' }}>
+      <span className="text-[12px] font-semibold text-white">{config.message}</span>
       {config.cta && onNavigate && (
         <button
           type="button"
           onClick={onNavigate}
-          className="flex items-center gap-[4px] text-[12px] font-semibold text-warn-border"
+          className="flex items-center gap-[4px] text-[12px] font-semibold text-lime"
         >
           {config.cta}
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 3L13 8L8 13M3 8H13" stroke="#F5C5B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M8 3L13 8L8 13M3 8H13" stroke="#A8E063" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
       )}

@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   checkNickname as checkNicknameApi,
   sendEmailCode as sendEmailCodeApi,
   verifyEmailCode as verifyEmailCodeApi,
+  sendPhoneCode as sendPhoneCodeApi,
+  verifyPhoneCode as verifyPhoneCodeApi,
   signup as signupApi,
   getTerms,
 } from "../services/authApi";
@@ -12,8 +14,12 @@ import { useAuth } from "../store/useAuth";
 type NicknameStatus = "idle" | "available" | "duplicate";
 type VerifyStatus   = "idle" | "sent" | "verified";
 
-export function useSignup(onComplete?: () => void) {
+export function useSignup(onComplete?: () => void | Promise<void>) {
   const { login: setAuth } = useAuth();
+
+  // 항상 최신 콜백을 가리키도록 ref 사용 (SignupPage가 매 렌더마다 새 함수 전달해도 안전)
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   const [name,           setName]           = useState("");
   const [nickname,       setNickname]       = useState("");
@@ -42,6 +48,7 @@ export function useSignup(onComplete?: () => void) {
   const passwordMatch    = password !== "" && confirmPw !== "" && password === confirmPw;
   const passwordMismatch = confirmPw !== "" && password !== confirmPw;
 
+  // ── 닉네임 중복 검사  GET /auth/check-nickname ─────────────────────────────
   async function checkNickname() {
     if (!nickname) return;
     try {
@@ -52,6 +59,7 @@ export function useSignup(onComplete?: () => void) {
     }
   }
 
+  // ── 이메일 인증번호 발송  POST /auth/email/send-code ───────────────────────
   async function sendEmailCode() {
     if (!email) return;
     try {
@@ -62,6 +70,7 @@ export function useSignup(onComplete?: () => void) {
     }
   }
 
+  // ── 이메일 인증번호 확인  POST /auth/email/verify-code ─────────────────────
   async function verifyEmailCode() {
     if (!emailCode) return;
     try {
@@ -73,39 +82,63 @@ export function useSignup(onComplete?: () => void) {
     }
   }
 
-  // 휴대폰은 UI만 (별도 SMS API 없음 — 백엔드 확인 후 추가)
-  function sendPhoneCode() { setPhoneStatus("sent"); }
-  function verifyPhoneCode() { setPhoneStatus("verified"); }
+  // ── 휴대폰 인증 시작  POST /auth/phone/start ───────────────────────────────
+  async function sendPhoneCode() {
+    if (!phone) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await sendPhoneCodeApi(phone);
+      setPhoneStatus("sent");
+    } catch {
+      setError("휴대폰 인증번호 발송에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
+  // ── 휴대폰 인증 완료  POST /auth/phone/verify ──────────────────────────────
+  async function verifyPhoneCode() {
+    if (!phoneCode) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const verified = await verifyPhoneCodeApi(phone, phoneCode);
+      setPhoneStatus(verified ? "verified" : "sent");
+      if (!verified) setError("인증번호가 올바르지 않습니다.");
+    } catch {
+      setError("인증번호 확인에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── 회원가입  POST /auth/signup ────────────────────────────────────────────
   async function handleSubmit() {
-    // 유효성 검사
-    if (!name) { setError("이름을 입력해주세요."); return; }
-    if (!nickname) { setError("닉네임을 입력해주세요."); return; }
-    if (nicknameStatus !== "available") { setError("닉네임 중복 검사를 해주세요."); return; }
-    if (!email) { setError("이메일을 입력해주세요."); return; }
-    if (emailStatus !== "verified") { setError("이메일 인증을 완료해주세요."); return; }
-    if (!password) { setError("비밀번호를 입력해주세요."); return; }
-    if (!passwordValid) { setError("비밀번호 형식이 올바르지 않습니다."); return; }
-    if (!passwordMatch) { setError("비밀번호가 일치하지 않습니다."); return; }
-    if (!termsAgreed) { setError("약관 동의에 동의해주세요."); return; }
+    if (!name)                           { setError("이름을 입력해주세요."); return; }
+    if (!nickname)                       { setError("닉네임을 입력해주세요."); return; }
+    if (nicknameStatus !== "available")  { setError("닉네임 중복 검사를 해주세요."); return; }
+    if (!email)                          { setError("이메일을 입력해주세요."); return; }
+    if (emailStatus !== "verified")      { setError("이메일 인증을 완료해주세요."); return; }
+    if (!password)                       { setError("비밀번호를 입력해주세요."); return; }
+    if (!passwordValid)                  { setError("비밀번호 형식이 올바르지 않습니다."); return; }
+    if (!passwordMatch)                  { setError("비밀번호가 일치하지 않습니다."); return; }
+    if (!termsAgreed)                    { setError("약관에 동의해주세요."); return; }
 
     setLoading(true);
     setError(null);
     try {
-      const requiredTermIds = terms
-        .filter((t) => t.is_required)
-        .map((t) => t.id);
-
+      const requiredTermIds = terms.filter(t => t.is_required).map(t => t.id);
       const tokens = await signupApi({
         email,
         password,
         name,
         nickname,
-        phone: phone ? phone.replace(/-/g, "") : "01000000000", // 임시 더미값
+        phone: phone ? phone.replace(/-/g, "") : "01000000000",
         term_ids: requiredTermIds,
       });
       setAuth(tokens);
-      onComplete?.(); // ← 성공 후 완료 페이지로
+      await onCompleteRef.current?.();
     } catch {
       setError("회원가입에 실패했습니다. 다시 시도해주세요.");
     } finally {

@@ -1,6 +1,7 @@
-import { useState, useCallback, createContext, useContext } from "react";
+import { useState, useEffect, useCallback, createContext, useContext } from "react";
 import type { ReactNode } from "react";
 import type { AuthUser } from "../services/authApi";
+import { getMyProfile, logout as logoutApi } from "../services/authApi";
 
 interface AuthState {
   isLoggedIn: boolean;
@@ -10,14 +11,13 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   login:  (tokens: { access_token: string; refresh_token: string; user: AuthUser }) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(() => {
-    // 새로고침해도 로그인 유지
     const token = localStorage.getItem("access_token");
     return {
       isLoggedIn:  !!token,
@@ -25,6 +25,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       accessToken: token,
     };
   });
+
+  // 페이지 새로고침 시 토큰이 있으면 /auth/me 로 사용자 정보 복원
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    getMyProfile()
+      .then(profile => {
+        setState(s => ({
+          ...s,
+          user: {
+            id:       profile.id,
+            email:    profile.email,
+            name:     profile.name,
+            nickname: profile.nickname,
+            role:     profile.role,
+          },
+        }));
+      })
+      .catch(() => {
+        // 토큰 만료 또는 유효하지 않음 — 로컬 상태 초기화
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        setState({ isLoggedIn: false, user: null, accessToken: null });
+      });
+  }, []);
 
   const login = useCallback(
     (tokens: { access_token: string; refresh_token: string; user: AuthUser }) => {
@@ -35,9 +60,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+  const logout = useCallback(async () => {
+    try {
+      await logoutApi(); // POST /auth/logout + localStorage 정리
+    } catch {
+      // API 실패해도 로컬 상태는 반드시 초기화
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+    }
     setState({ isLoggedIn: false, user: null, accessToken: null });
   }, []);
 

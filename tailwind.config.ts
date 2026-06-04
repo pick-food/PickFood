@@ -19,22 +19,23 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Pretendard", "system-ui", "sans-serif"],
+        sans: ["Pretendard Variable", "Pretendard", "system-ui", "sans-serif"],
       },
       fontSize: {
-        "h-26": ["26px", { lineHeight: "26px", letterSpacing: "-0.02em" }],
-        "h-24": ["24px", { lineHeight: "24px", letterSpacing: "-0.01em" }],
-        "h-16": ["16px", { lineHeight: "16px", letterSpacing: "-0em" }],
-        "h-14": ["14px", { lineHeight: "14px", letterSpacing: "-0em" }],
-        "b-11": ["11px", { lineHeight: "12px", letterSpacing: "-0em" }],
-        "b-12": ["12px", { lineHeight: "12px", letterSpacing: "-0em" }],
-        "b-13": ["13px", { lineHeight: "14px", letterSpacing: "-0em" }],
-        "b-14": ["14px", { lineHeight: "14px", letterSpacing: "-0em" }],
-        "b-15": ["15px", { lineHeight: "16px", letterSpacing: "-0em" }],
-        "b-16": ["16px", { lineHeight: "16px", letterSpacing: "-0em" }],
-        "b-18": ["18px", { lineHeight: "18px", letterSpacing: "-0.02em" }],
-        "b-20": ["20px", { lineHeight: "20px", letterSpacing: "-0em" }],
-        "b-22": ["22px", { lineHeight: "30px", letterSpacing: "-0.01em" }],
+        "h-26": ["26px", { lineHeight: "1.3", letterSpacing: "-0.02em" }],
+        "h-24": ["24px", { lineHeight: "1.3", letterSpacing: "-0.01em" }],
+        "h-20": ["20px", { lineHeight: "1.4", letterSpacing: "-0.01em" }],
+        "h-16": ["16px", { lineHeight: "1.4", letterSpacing: "-0.01em" }],
+        "h-14": ["14px", { lineHeight: "1.4", letterSpacing: "0" }],
+        "b-11": ["11px", { lineHeight: "1.4", letterSpacing: "0" }],
+        "b-12": ["12px", { lineHeight: "1.4", letterSpacing: "0" }],
+        "b-13": ["13px", { lineHeight: "1.4", letterSpacing: "0" }],
+        "b-14": ["14px", { lineHeight: "1.4", letterSpacing: "0" }],
+        "b-15": ["15px", { lineHeight: "1.4", letterSpacing: "0" }],
+        "b-16": ["16px", { lineHeight: "1.5", letterSpacing: "0" }],
+        "b-18": ["18px", { lineHeight: "1.5", letterSpacing: "-0.01em" }],
+        "b-20": ["20px", { lineHeight: "1.5", letterSpacing: "0" }],
+        "b-22": ["22px", { lineHeight: "1.4", letterSpacing: "-0.01em" }],
       },
       borderRadius: {
         xs:   "4px",
@@ -43,21 +44,32 @@ export default {
         md:   "8px",
         lg:   "10px",
         xl:   "12px",
+        "2xl": "16px",
+        "3xl": "20px",
       },
       colors: {
         white:  "#FFFFFF",
         black:  "#000000",
         naver:  "#03A94D",
         kakao:  "#FEE500",
-        red: "#FF0000",
-        green : "#00C900",
-        
+
+        // ── Pickfood primary: forest green ─────────────────────
         primary: {
-          DEFAULT: "#8B3A1A",
-          dark:    "#5C2D0A",
-          red:     "#C0392B",
-          light:   "#F5E7E2",
+          DEFAULT:  "#1F4D2C",   // forest green
+          dark:     "#0F2E18",   // deep forest
+          darker:   "#0F1E12",   // darkest bg
+          light:    "#EBF5EC",   // tint
+          mid:      "#2A6339",   // mid green
         },
+
+        // ── Lime accent ────────────────────────────────────────
+        lime: {
+          DEFAULT: "#A8E063",
+          dark:    "#7CB835",
+          light:   "#F0FADA",
+        },
+
+        // ── Gray scale ─────────────────────────────────────────
         gray: {
           900: "#1A1A1A",
           800: "#333333",
@@ -65,39 +77,47 @@ export default {
           400: "#777777",
           300: "#999999",
           200: "#AAAAAA",
-          100: "#BBBBBB",
+          100: "#CCCCCC",
+          50:  "#F4F5F1",
+        },
+
+        // ── Surface & border ───────────────────────────────────
+        surface: {
+          DEFAULT: "#F4F5F1",
+          warm:    "#F8F9F5",
+          card:    "#FFFFFF",
         },
         border: {
-          DEFAULT: "#EBEBEB",
-          light:   "#F0F0F0",
-          mid:     "#DDDDDD",
-          hover:   "#CCCCCC",
-          warm:    "#F0EBE6",
+          DEFAULT: "#E5E7E1",
+          light:   "#ECEEE9",
+          mid:     "#D4D7CE",
+          hover:   "#B8BDB2",
+          warm:    "#DEEBD5",
         },
+
+        // ── Semantic: danger / sale ────────────────────────────
         warn: {
-          DEFAULT:   "#8B2A1A",
-          light:     "#FFF3F0",
-          active:    "#A02010",
-          border:    "#F5C5B8",
-          tagLight:  "#FFF2EE",
-          tagBorder: "#F0C0B0",
+          DEFAULT:   "#D32F2F",
+          light:     "#FFF5F5",
+          active:    "#B71C1C",
+          border:    "#FFCDD2",
+          tagLight:  "#FFF5F5",
+          tagBorder: "#FFCDD2",
         },
+
+        // ── Semantic: safe / organic ──────────────────────────
         safe: {
           DEFAULT: "#2A7A3A",
           light:   "#F0FAF2",
           border:  "#B0DDB8",
           vegan:   "#2D6A2D",
         },
+
+        // ── Amber accent (price highlights) ───────────────────
         accent: {
-          DEFAULT: "#E8C8A0",
-          peach:   "#FFCC99",
-          mint:    "#A0E8B0",
-          aque:    "#99FFCC",
-        },
-        surface: {
-          DEFAULT: "#FAFAFA",
-          faint:   "#F8F8F8",
-          warm:    "#FAF5F2",
+          DEFAULT: "#E89B26",
+          light:   "#FFF8EC",
+          dark:    "#B57A10",
         },
       },
     },

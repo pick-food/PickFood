@@ -11,6 +11,7 @@ import ProductPage        from "./features/product/components/ProductPage";
 import ProductDetailPage  from "./features/product/components/ProductDetailPage";
 import { useAuth }        from "./features/auth/store/useAuth";
 import type { Product }   from "./features/product/models/type";
+import Chatbot            from "./features/chat/components/Chatbot";
 
 type Page = "main" | "login" | "signup" | "signupComplete" | "findId" | "findPassword" | "product";
 
@@ -26,12 +27,16 @@ function AppInner() {
   const [activeNavTab, setActiveNavTab]       = useState<string | null>("all");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
+  // 이미 로그인된 상태로 앱이 로드될 때(새로고침 등) 메인으로 이동.
+  // isLoggedIn 변경 시마다 실행하면 회원가입 완료 후 signupComplete 대신 main으로
+  // 튕기는 문제가 생기므로 마운트 시 1회만 실행.
   useEffect(() => {
     if (isLoggedIn) {
       setPage("main");
       setActiveNavTab("all");
     }
-  }, [isLoggedIn]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function goTo(p: Page) {
     setPage(p);
@@ -42,8 +47,15 @@ function AppInner() {
 
   function handleNavTabChange(id: string) {
     setActiveNavTab(id);
-    if (id === "all")     goTo("main");
-    if (id === "product") goTo("product");
+    if (id === "all") {
+      goTo("main");
+    } else if (id === "ai") {
+      // Open the floating chatbot widget without navigating
+      window.dispatchEvent(new CustomEvent("pickfood:openchat"));
+    } else {
+      // All food category tabs go to the product listing page
+      goTo("product");
+    }
   }
 
   function handleProductClick(product: Product) {
@@ -51,7 +63,7 @@ function AppInner() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ position: 'relative' }}>
       <TopBar
         onLogin={() => goTo("login")}
         onSignup={() => goTo("signup")}
@@ -77,6 +89,7 @@ function AppInner() {
             {page === "main"           && <MainPage onProductClick={handleProductClick} />}
             {page === "login"          && (
               <LoginPage
+                onSuccess={() => goTo("main")}
                 onSignup={() => goTo("signup")}
                 onFindId={() => goTo("findId")}
                 onFindPassword={() => goTo("findPassword")}
@@ -113,6 +126,7 @@ function AppInner() {
           </div>
         )}
       </main>
+      <Chatbot />
     </div>
   );
 }
