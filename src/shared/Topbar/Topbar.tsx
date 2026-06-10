@@ -141,7 +141,6 @@ export function TopBar({
           {/* 내비게이션 */}
           <nav style={{ display: 'flex', gap: 2 }}>
             {[
-              { id: 'all',     label: '홈' },
               { id: 'product', label: '카테고리' },
               { id: 'ai',      label: 'AI 상담' },
             ].map(item => {

@@ -28,8 +28,9 @@ export function useSignup(onComplete?: () => void | Promise<void>) {
   const [password,       setPassword]       = useState("");
   const [confirmPw,      setConfirmPw]      = useState("");
   const [phone,          setPhone]          = useState("");
-  const [phoneCode,      setPhoneCode]      = useState("");
-  const [termsAgreed,    setTermsAgreed]    = useState(false);
+  const [phoneVerifyCode,          setPhoneVerifyCode]          = useState("");
+  const [phoneVerificationToken,  setPhoneVerificationToken]  = useState("");
+  const [termsAgreed,             setTermsAgreed]             = useState(false);
   const [showPassword,   setShowPassword]   = useState(false);
   const [showConfirmPw,  setShowConfirmPw]  = useState(false);
   const [nicknameStatus, setNicknameStatus] = useState<NicknameStatus>("idle");
@@ -88,7 +89,8 @@ export function useSignup(onComplete?: () => void | Promise<void>) {
     setLoading(true);
     setError(null);
     try {
-      await sendPhoneCodeApi(phone);
+      const code = await sendPhoneCodeApi(phone);
+      setPhoneVerifyCode(code);
       setPhoneStatus("sent");
     } catch {
       setError("휴대폰 인증번호 발송에 실패했습니다.");
@@ -99,15 +101,20 @@ export function useSignup(onComplete?: () => void | Promise<void>) {
 
   // ── 휴대폰 인증 완료  POST /auth/phone/verify ──────────────────────────────
   async function verifyPhoneCode() {
-    if (!phoneCode) return;
     setLoading(true);
     setError(null);
     try {
-      const verified = await verifyPhoneCodeApi(phone, phoneCode);
-      setPhoneStatus(verified ? "verified" : "sent");
-      if (!verified) setError("인증번호가 올바르지 않습니다.");
-    } catch {
-      setError("인증번호 확인에 실패했습니다.");
+      const result = await verifyPhoneCodeApi(phone);
+      if (result.verified) {
+        setPhoneStatus("verified");
+        if (result.token) setPhoneVerificationToken(result.token);
+      } else {
+        setPhoneStatus("sent");
+        setError("아직 SMS 인증이 완료되지 않았습니다.");
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? "인증 확인에 실패했습니다.");
     } finally {
       setLoading(false);
     }
@@ -120,6 +127,8 @@ export function useSignup(onComplete?: () => void | Promise<void>) {
     if (nicknameStatus !== "available")  { setError("닉네임 중복 검사를 해주세요."); return; }
     if (!email)                          { setError("이메일을 입력해주세요."); return; }
     if (emailStatus !== "verified")      { setError("이메일 인증을 완료해주세요."); return; }
+    if (!phone)                          { setError("휴대폰 번호를 입력해주세요."); return; }
+    if (phoneStatus !== "verified")      { setError("휴대폰 인증을 완료해주세요."); return; }
     if (!password)                       { setError("비밀번호를 입력해주세요."); return; }
     if (!passwordValid)                  { setError("비밀번호 형식이 올바르지 않습니다."); return; }
     if (!passwordMatch)                  { setError("비밀번호가 일치하지 않습니다."); return; }
@@ -134,7 +143,8 @@ export function useSignup(onComplete?: () => void | Promise<void>) {
         password,
         name,
         nickname,
-        phone: phone ? phone.replace(/-/g, "") : "01000000000",
+        phone: phone.replace(/-/g, ""),
+        phone_verification_token: phoneVerificationToken,
         term_ids: requiredTermIds,
       });
       setAuth(tokens);
@@ -154,7 +164,7 @@ export function useSignup(onComplete?: () => void | Promise<void>) {
     password, setPassword,
     confirmPw, setConfirmPw,
     phone, setPhone,
-    phoneCode, setPhoneCode,
+    phoneVerifyCode,
     termsAgreed, setTermsAgreed,
     showPassword, setShowPassword,
     showConfirmPw, setShowConfirmPw,

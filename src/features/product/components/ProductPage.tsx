@@ -9,15 +9,15 @@ interface ProductPageProps {
 
 /* ── 정적 데이터 ─────────────────────────────────────────── */
 const MAIN_CATS = [
-  { id: 'protein', name: '단백질·육류' },
-  { id: 'fruit',   name: '과일·채소' },
-  { id: 'veg',     name: '채소·나물' },
-  { id: 'dairy',   name: '유제품·두부' },
-  { id: 'staple',  name: '쌀·잡곡' },
-  { id: 'ready',   name: '간편식' },
-  { id: 'snack',   name: '과자·간식' },
-  { id: 'baby',    name: '아기·이유식' },
-  { id: 'health',  name: '건강기능식품' },
+  { id: 'protein', name: '단백질·육류',   emoji: '🥩' },
+  { id: 'fruit',   name: '과일·채소',     emoji: '🍎' },
+  { id: 'veg',     name: '채소·나물',     emoji: '🥦' },
+  { id: 'dairy',   name: '유제품·두부',   emoji: '🥛' },
+  { id: 'staple',  name: '쌀·잡곡',      emoji: '🍚' },
+  { id: 'ready',   name: '간편식',        emoji: '🍱' },
+  { id: 'snack',   name: '과자·간식',     emoji: '🍪' },
+  { id: 'baby',    name: '아기·이유식',   emoji: '🍼' },
+  { id: 'health',  name: '건강기능식품',  emoji: '💊' },
 ];
 
 const SUBCATS: Record<string, string[]> = {
@@ -184,33 +184,46 @@ const ProductPage: FC<ProductPageProps> = ({ onProductClick }) => {
     <div style={{ background: '#fff', minHeight: '100vh', paddingBottom: 80 }}>
 
       {/* 카테고리 상단 레일 */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #E5E7E1' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 40px', display: 'flex', overflowX: 'auto' }}>
-          {MAIN_CATS.map(c => (
-            <button key={c.id} onClick={() => { setActiveCat(c.id); setActiveSub('전체'); }} style={{
-              padding: '18px 22px', fontFamily: 'inherit', fontSize: 14,
-              fontWeight: activeCat === c.id ? 700 : 500,
-              color: activeCat === c.id ? '#1F4D2C' : '#3A4A3F',
-              background: 'transparent', border: 'none', cursor: 'pointer',
-              borderBottom: '2px solid ' + (activeCat === c.id ? '#1F4D2C' : 'transparent'),
-              whiteSpace: 'nowrap', transition: 'color 160ms',
-            }}>{c.name}</button>
-          ))}
+      <div style={{ background: '#FAFAF6', borderBottom: '1px solid #E5E7E1' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '16px 40px', display: 'flex', gap: 8, overflowX: 'auto' }} className="scrollbar-hide">
+          {MAIN_CATS.map(c => {
+            const active = activeCat === c.id;
+            return (
+              <button key={c.id} onClick={() => { setActiveCat(c.id); setActiveSub('전체'); }} style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                padding: '12px 20px', fontFamily: 'inherit',
+                background: active ? '#fff' : 'transparent',
+                border: active ? '1.5px solid #1F4D2C' : '1.5px solid transparent',
+                borderRadius: 14, cursor: 'pointer', whiteSpace: 'nowrap',
+                boxShadow: active ? '0 2px 8px rgba(31,77,44,0.12)' : 'none',
+                transition: 'all 160ms',
+                flexShrink: 0,
+              }}>
+                <span style={{ fontSize: 24 }}>{c.emoji}</span>
+                <span style={{
+                  fontSize: 12, fontWeight: active ? 700 : 500,
+                  color: active ? '#1F4D2C' : '#6B7A6E',
+                }}>{c.name}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* 서브카테고리 레일 */}
       <div style={{ background: '#fff', borderBottom: '1px solid #E5E7E1' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '12px 40px', display: 'flex', gap: 6, overflowX: 'auto' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '10px 40px', display: 'flex', gap: 6, overflowX: 'auto', alignItems: 'center' }} className="scrollbar-hide">
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#9AA89D', marginRight: 4, flexShrink: 0 }}>세부</span>
           {subs.map((s, i) => {
             const isActive = s === activeSub || (i === 0 && activeSub === '전체');
             return (
               <button key={s} onClick={() => setActiveSub(i === 0 ? '전체' : s)} style={{
-                padding: '7px 14px', borderRadius: 999,
-                border: '1px solid ' + (isActive ? '#0F1E12' : '#E5E7E1'),
-                background: isActive ? '#0F1E12' : '#fff',
+                padding: '6px 14px', borderRadius: 999,
+                border: '1px solid ' + (isActive ? '#1F4D2C' : '#E5E7E1'),
+                background: isActive ? '#1F4D2C' : '#fff',
                 color: isActive ? '#fff' : '#3A4A3F',
-                fontFamily: 'inherit', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+                fontFamily: 'inherit', fontSize: 12, fontWeight: isActive ? 700 : 500,
+                cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 160ms', flexShrink: 0,
               }}>{s}</button>
             );
           })}

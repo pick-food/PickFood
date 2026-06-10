@@ -30,6 +30,12 @@ export interface AllergenWithEmoji extends Allergen {
   emoji: string;
 }
 
+function flattenAllergens(list: Allergen[]): Allergen[] {
+  return list.flatMap(a =>
+    a.children?.length ? [a, ...flattenAllergens(a.children)] : [a]
+  );
+}
+
 export function useAllergens() {
   const [allergens, setAllergens] = useState<AllergenWithEmoji[]>([]);
   const [loading, setLoading]     = useState(false);
@@ -39,7 +45,8 @@ export function useAllergens() {
     setLoading(true);
     getAllergens()
       .then(list => {
-        setAllergens(list.map(a => ({ ...a, emoji: EMOJI_MAP[a.name] ?? '⚠️' })));
+        const flat = flattenAllergens(list);
+        setAllergens(flat.map(a => ({ ...a, emoji: EMOJI_MAP[a.name] ?? '⚠️' })));
       })
       .catch(() => setError("알레르기 목록을 불러오지 못했습니다."))
       .finally(() => setLoading(false));

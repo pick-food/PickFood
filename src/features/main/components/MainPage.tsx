@@ -8,6 +8,8 @@ import type { Product } from "../../product/models/type";
 /* ── props ──────────────────────────────────────────────── */
 interface MainPageProps {
   onProductClick?: (product: Product) => void;
+  onSignup?: () => void;
+  onGoToProduct?: () => void;
 }
 
 /* ── 공통 SVG 아이콘 ──────────────────────────────────────── */
@@ -105,8 +107,9 @@ const SIDE_PROMOS = [
   },
 ];
 
-const SidePromo: FC<typeof SIDE_PROMOS[0]> = ({ bg, accent, kicker, title, desc, img, cta }) => (
+const SidePromo: FC<typeof SIDE_PROMOS[0] & { onCta?: () => void }> = ({ bg, accent, kicker, title, desc, img, cta, onCta }) => (
   <div
+    onClick={onCta}
     style={{
       background: bg, borderRadius: 14, padding: 16,
       display: 'flex', gap: 14, alignItems: 'center', flex: 1,
@@ -396,7 +399,7 @@ const Countdown: FC = () => {
 };
 
 /* ── MainPage ────────────────────────────────────────────── */
-const MainPage: FC<MainPageProps> = ({ onProductClick }) => {
+const MainPage: FC<MainPageProps> = ({ onProductClick, onSignup, onGoToProduct }) => {
   const { isLoggedIn } = useAuth();
   const { products }   = useProducts();
   const [activeCat, setActiveCat] = useState('all');
@@ -414,7 +417,9 @@ const MainPage: FC<MainPageProps> = ({ onProductClick }) => {
         <section style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16, marginBottom: 36 }}>
           <HeroCarousel />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {SIDE_PROMOS.map((sp, i) => <SidePromo key={i} {...sp} />)}
+            {SIDE_PROMOS.map((sp, i) => (
+              <SidePromo key={i} {...sp} onCta={i === 0 ? onGoToProduct : onSignup} />
+            ))}
           </div>
         </section>
 

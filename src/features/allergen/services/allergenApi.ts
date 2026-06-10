@@ -10,6 +10,7 @@ interface ApiResponse<T> {
 export interface Allergen {
   id: string;
   name: string;
+  children?: Allergen[];
 }
 
 export interface AllergenGroup {
@@ -25,7 +26,9 @@ export interface AllergenGroupPayload {
 
 // ── 알레르기 유발물질 목록 조회  GET /allergens ───────────────────────────────
 export async function getAllergens(): Promise<Allergen[]> {
-  const res = await apiClient.get<ApiResponse<Allergen[]>>("/allergens");
+  const res = await apiClient.get<ApiResponse<Allergen[]>>("/allergens", {
+    params: { legal_only: true },
+  });
   return res.data.data;
 }
 

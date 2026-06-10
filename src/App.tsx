@@ -90,7 +90,7 @@ function AppInner() {
           </>
         ) : (
           <div className="flex-1 flex flex-col">
-            {page === "main"           && <MainPage onProductClick={handleProductClick} />}
+            {page === "main"           && <MainPage onProductClick={handleProductClick} onSignup={() => goTo("signup")} onGoToProduct={() => goTo("product")} />}
             {page === "login"          && (
               <LoginPage
                 onSuccess={() => goTo("main")}

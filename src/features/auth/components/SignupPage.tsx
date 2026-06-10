@@ -46,8 +46,8 @@ const PrevBtn: FC<{ onClick: () => void }> = ({ onClick }) => (
   </button>
 );
 
-const NextBtn: FC<{ onClick: () => void; label: string }> = ({ onClick, label }) => (
-  <button onClick={onClick} style={{ padding: '12px 28px', background: 'linear-gradient(135deg, #1F4D2C, #2A6339)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+const NextBtn: FC<{ onClick: () => void; label: string; disabled?: boolean }> = ({ onClick, label, disabled }) => (
+  <button onClick={onClick} disabled={disabled} style={{ padding: '12px 28px', background: disabled ? '#C9CFC4' : 'linear-gradient(135deg, #1F4D2C, #2A6339)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: disabled ? 'default' : 'pointer', fontFamily: 'inherit', opacity: disabled ? 0.7 : 1 }}>
     {label}
   </button>
 );
@@ -82,10 +82,13 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
     emailCode, setEmailCode,
     password, setPassword,
     confirmPw, setConfirmPw,
+    phone, setPhone,
+    phoneVerifyCode,
     termsAgreed, setTermsAgreed,
     showPassword, setShowPassword,
     nicknameStatus, checkNickname,
     emailStatus, sendEmailCode, verifyEmailCode,
+    phoneStatus, sendPhoneCode, verifyPhoneCode,
     passwordValid, passwordMatch, passwordMismatch,
     loading, error,
     handleSubmit,
@@ -143,10 +146,10 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
               </Field>
 
               {/* 닉네임 */}
-              <Field label="닉네임">
+              <Field label="닉네임(2~30글자)">
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input type="text" autoComplete="off" value={nickname} onChange={e => setNickname(e.target.value)}
-                    placeholder="닉네임을 입력해주세요" style={{ ...inputStyle, flex: 1 }} onFocus={focusGreen} onBlur={blurGray} />
+                    placeholder="영문자로 시작, 영문·숫자만 사용 가능" style={{ ...inputStyle, flex: 1 }} onFocus={focusGreen} onBlur={blurGray} />
                   <button type="button" onClick={checkNickname} style={{
                     padding: '0 16px', height: 44, border: '1px solid', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap',
                     borderColor: nicknameStatus === 'available' ? '#1F4D2C' : '#C9CFC4',
@@ -165,26 +168,59 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input type="email" autoComplete="off" value={email} onChange={e => setEmail(e.target.value)}
                     placeholder="example@pickfood.com" style={{ ...inputStyle, flex: 1 }} onFocus={focusGreen} onBlur={blurGray} />
-                  <button type="button" onClick={sendEmailCode} style={{
-                    padding: '0 16px', height: 44, border: '1px solid', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap',
-                    borderColor: emailStatus === 'verified' ? '#1F4D2C' : '#C9CFC4',
-                    background: emailStatus === 'verified' ? '#1F4D2C' : '#fff',
-                    color: emailStatus === 'verified' ? '#fff' : '#3A4A3F',
+                  <button type="button" onClick={sendEmailCode} disabled={emailStatus === 'verified'} style={{
+                    padding: '0 16px', height: 44, border: '1px solid', borderRadius: 8, cursor: (emailStatus === 'sent' || emailStatus === 'verified') ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap',
+                    borderColor: (emailStatus === 'sent' || emailStatus === 'verified') ? '#1F4D2C' : '#C9CFC4',
+                    background: (emailStatus === 'sent' || emailStatus === 'verified') ? '#1F4D2C' : '#fff',
+                    color: (emailStatus === 'sent' || emailStatus === 'verified') ? '#fff' : '#3A4A3F',
                   }}>
-                    {emailStatus === 'verified' ? '인증 완료' : '인증번호 전송'}
+                    {emailStatus === 'verified' ? '인증 완료' : emailStatus === 'sent' ? '전송 완료' : '인증번호 전송'}
                   </button>
                 </div>
                 {(emailStatus === 'sent' || emailStatus === 'verified') && (
                   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                     <input type="text" autoComplete="off" value={emailCode} onChange={e => setEmailCode(e.target.value)}
                       placeholder="인증번호를 입력해주세요" style={{ ...inputStyle, flex: 1 }} onFocus={focusGreen} onBlur={blurGray} />
-                    <button type="button" onClick={verifyEmailCode} style={{
-                      padding: '0 16px', height: 44, border: '1px solid #C9CFC4', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, flexShrink: 0,
+                    <button type="button" onClick={verifyEmailCode} disabled={emailStatus === 'verified'} style={{
+                      padding: '0 16px', height: 44, border: '1px solid', borderRadius: 8, cursor: emailStatus === 'verified' ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, flexShrink: 0,
                       background: emailStatus === 'verified' ? '#1F4D2C' : '#fff',
                       color: emailStatus === 'verified' ? '#fff' : '#3A4A3F',
                       borderColor: emailStatus === 'verified' ? '#1F4D2C' : '#C9CFC4',
                     }}>
                       {emailStatus === 'verified' ? '인증 완료' : '인증하기'}
+                    </button>
+                  </div>
+                )}
+              </Field>
+
+              {/* 휴대폰 */}
+              <Field label="휴대폰 번호">
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input type="tel" autoComplete="off" value={phone} onChange={e => setPhone(e.target.value)}
+                    placeholder="01012345678 (- 없이 입력)" style={{ ...inputStyle, flex: 1 }} onFocus={focusGreen} onBlur={blurGray} />
+                  <button type="button" onClick={sendPhoneCode} disabled={phoneStatus === 'verified'} style={{
+                    padding: '0 16px', height: 44, border: '1px solid', borderRadius: 8, cursor: phoneStatus === 'verified' ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap',
+                    borderColor: (phoneStatus === 'sent' || phoneStatus === 'verified') ? '#1F4D2C' : '#C9CFC4',
+                    background: (phoneStatus === 'sent' || phoneStatus === 'verified') ? '#1F4D2C' : '#fff',
+                    color: (phoneStatus === 'sent' || phoneStatus === 'verified') ? '#fff' : '#3A4A3F',
+                  }}>
+                    {phoneStatus === 'verified' ? '인증 완료' : phoneStatus === 'sent' ? '재전송' : '인증번호 전송'}
+                  </button>
+                </div>
+                {(phoneStatus === 'sent' || phoneStatus === 'verified') && (
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ background: '#F0F7F2', border: '1px solid #C9E4CF', borderRadius: 8, padding: '12px 14px', marginBottom: 8 }}>
+                      <div style={{ fontSize: 12, color: '#1F4D2C', fontWeight: 600, marginBottom: 6 }}>아래 번호로 문자를 보내주세요 (5분 내)</div>
+                      <div style={{ fontSize: 13, color: '#0F1E12' }}>수신번호: <strong>1666-3538</strong></div>
+                      <div style={{ fontSize: 13, color: '#0F1E12', marginTop: 4 }}>메시지: <strong>PF-{phoneVerifyCode}</strong></div>
+                    </div>
+                    <button type="button" onClick={verifyPhoneCode} disabled={phoneStatus === 'verified'} style={{
+                      width: '100%', padding: '11px 0', border: '1px solid', borderRadius: 8, cursor: phoneStatus === 'verified' ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
+                      background: phoneStatus === 'verified' ? '#1F4D2C' : '#fff',
+                      color: phoneStatus === 'verified' ? '#fff' : '#3A4A3F',
+                      borderColor: phoneStatus === 'verified' ? '#1F4D2C' : '#C9CFC4',
+                    }}>
+                      {phoneStatus === 'verified' ? '인증 완료' : '문자 전송 후 인증 확인'}
                     </button>
                   </div>
                 )}
@@ -242,7 +278,19 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
             {error && <p style={{ fontSize: 12, color: '#D32F2F', textAlign: 'center', marginTop: 12 }}>{error}</p>}
 
             <div style={{ marginTop: 32, display: 'flex', justifyContent: 'flex-end' }}>
-              <NextBtn onClick={() => setStep(2)} label="다음 → 알레르기 등록" />
+              <NextBtn
+                onClick={() => setStep(2)}
+                label="다음으로"
+                disabled={
+                  !name ||
+                  !nickname || nicknameStatus !== 'available' ||
+                  emailStatus !== 'verified' ||
+                  phoneStatus !== 'verified' ||
+                  !password || !passwordValid ||
+                  !passwordMatch ||
+                  !termsAgreed
+                }
+              />
             </div>
           </div>
         )}

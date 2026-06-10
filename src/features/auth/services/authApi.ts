@@ -44,20 +44,22 @@ export async function verifyEmailCode(email: string, code: string): Promise<bool
 
 // ── 휴대폰 인증 시작 (코드 발급)  POST /auth/phone/start ──────────────────────
 export async function sendPhoneCode(phone: string): Promise<string> {
-  const res = await apiClient.post<ApiResponse<{ message: string }>>(
+  const res = await apiClient.post<ApiResponse<{ code: string; expiresAt: string; sendTo: string }>>(
     "/auth/phone/start",
-    { phone: phone.replace(/-/g, "") }
+    { phone: phone.replace(/-/g, ""), purpose: "self" }
   );
-  return res.data.data.message;
+  return res.data.data.code;
 }
 
 // ── 휴대폰 인증 완료  POST /auth/phone/verify ────────────────────────────────
-export async function verifyPhoneCode(phone: string, code: string): Promise<boolean> {
-  const res = await apiClient.post<ApiResponse<{ verified: boolean }>>(
+export async function verifyPhoneCode(
+  phone: string
+): Promise<{ verified: boolean; token?: string }> {
+  const res = await apiClient.post<ApiResponse<{ verified: boolean; token?: string }>>(
     "/auth/phone/verify",
-    { phone: phone.replace(/-/g, ""), code }
+    { phone: phone.replace(/-/g, ""), purpose: "self" }
   );
-  return res.data.data.verified;
+  return res.data.data;
 }
 
 // ── 회원가입  POST /auth/signup ───────────────────────────────────────────────
@@ -67,6 +69,7 @@ export interface SignupPayload {
   name: string;
   nickname: string;
   phone: string;
+  phone_verification_token: string;
   term_ids: string[];
 }
 
