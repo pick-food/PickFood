@@ -70,7 +70,7 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
   const [showTerms, setShowTerms] = useState(false);
 
   // GET /allergens — 알레르기 유발물질 목록 로드
-  const { allergens: apiAllergens, loading: allergensLoading } = useAllergens();
+  const { allergens: apiAllergens, loading: allergensLoading, error: allergensError, refetch: refetchAllergens } = useAllergens();
 
   // useSignup에 onComplete 래퍼 전달:
   // 회원가입 성공 → POST /allergen-groups 저장 → 부모 onComplete 호출
@@ -174,7 +174,7 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
                     background: (emailStatus === 'sent' || emailStatus === 'verified') ? '#1F4D2C' : '#fff',
                     color: (emailStatus === 'sent' || emailStatus === 'verified') ? '#fff' : '#3A4A3F',
                   }}>
-                    {emailStatus === 'verified' ? '인증 완료' : emailStatus === 'sent' ? '전송 완료' : '인증번호 전송'}
+                    {emailStatus === 'verified' ? '인증 완료' : emailStatus === 'sent' ? '재전송' : '인증번호 전송'}
                   </button>
                 </div>
                 {(emailStatus === 'sent' || emailStatus === 'verified') && (
@@ -212,7 +212,7 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
                     <div style={{ background: '#F0F7F2', border: '1px solid #C9E4CF', borderRadius: 8, padding: '12px 14px', marginBottom: 8 }}>
                       <div style={{ fontSize: 12, color: '#1F4D2C', fontWeight: 600, marginBottom: 6 }}>아래 번호로 문자를 보내주세요 (5분 내)</div>
                       <div style={{ fontSize: 13, color: '#0F1E12' }}>수신번호: <strong>1666-3538</strong></div>
-                      <div style={{ fontSize: 13, color: '#0F1E12', marginTop: 4 }}>메시지: <strong>PF-{phoneVerifyCode}</strong></div>
+                      <div style={{ fontSize: 13, color: '#0F1E12', marginTop: 4 }}>메시지: <strong>{phoneVerifyCode}</strong></div>
                     </div>
                     <button type="button" onClick={verifyPhoneCode} disabled={phoneStatus === 'verified'} style={{
                       width: '100%', padding: '11px 0', border: '1px solid', borderRadius: 8, cursor: phoneStatus === 'verified' ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
@@ -347,6 +347,13 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#3A4A3F', marginBottom: 10 }}>알레르기 식재료 (복수 선택)</div>
                 {allergensLoading ? (
                   <div style={{ fontSize: 13, color: '#9AA89D', textAlign: 'center', padding: 16 }}>불러오는 중…</div>
+                ) : allergensError ? (
+                  <div style={{ textAlign: 'center', padding: 16 }}>
+                    <p style={{ fontSize: 13, color: '#D32F2F', marginBottom: 8 }}>{allergensError}</p>
+                    <button type="button" onClick={refetchAllergens} style={{ fontFamily: 'inherit', fontSize: 12, fontWeight: 600, padding: '7px 16px', border: '1px solid #C9CFC4', borderRadius: 8, background: '#fff', color: '#3A4A3F', cursor: 'pointer' }}>
+                      다시 시도
+                    </button>
+                  </div>
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
                     {apiAllergens.map(a => {

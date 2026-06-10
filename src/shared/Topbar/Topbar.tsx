@@ -3,13 +3,16 @@ import logo from '/logo.svg';
 import { useTopBar } from './hooks/useTopBar';
 import { NavBar }     from './components/NavBar';
 import { useAuth }    from '../../features/auth/store/useAuth';
+import { useMyAllergenSummary } from '../../features/allergen/hooks/useMyAllergenSummary';
 import NotificationPanel from '../../features/notification/components/NotificationPanel';
+import { PF_CURRENT_USER } from '../../data/pfData';
 
 interface TopBarProps {
   onSearch?:       (query: string) => void;
   onLogin?:        () => void;
   onSignup?:       () => void;
   onSupport?:      () => void;
+  onMyPage?:       () => void;
   isLoginActive?:  boolean;
   isSignupActive?: boolean;
   isLoggedIn:      boolean;
@@ -59,7 +62,6 @@ const BellIco     = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="
 const HeartIco    = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="#3A4A3F" strokeWidth="1.8"/></svg>;
 const CartIco     = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="#3A4A3F" strokeWidth="1.8" strokeLinejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke="#3A4A3F" strokeWidth="1.8"/><path d="M16 10a4 4 0 01-8 0" stroke="#3A4A3F" strokeWidth="1.8"/></svg>;
 const UserIco     = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#9AA89D" strokeWidth="1.8"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7" stroke="#9AA89D" strokeWidth="1.8" strokeLinecap="round"/></svg>;
-const MapPinIco   = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="#1F4D2C" strokeWidth="2"/><circle cx="12" cy="10" r="3" stroke="#1F4D2C" strokeWidth="2"/></svg>;
 const ShieldIco   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L4 6v6c0 5.5 3.5 10.7 8 12 4.5-1.3 8-6.5 8-12V6L12 2z" stroke="#A8E063" strokeWidth="1.8" strokeLinejoin="round"/><path d="M9 12l2 2 4-4" stroke="#A8E063" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 const ChevRightIco = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="#A8E063" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 
@@ -69,6 +71,7 @@ export function TopBar({
   onSearch,
   onLogin,
   onSignup,
+  onMyPage,
   isLoginActive: _isLoginActive,
   isSignupActive: _isSignupActive,
   isLoggedIn,
@@ -76,13 +79,14 @@ export function TopBar({
   onNavTabChange,
 }: TopBarProps) {
   const { logout } = useAuth();
+  const { allergenNames, diseaseNames } = useMyAllergenSummary();
   const { search: _search, filter: _filter, tabs } = useTopBar(onSearch);
   const [q, setQ] = useState('');
-  const menuRef    = useRef<HTMLDivElement>(null);
-  const notifRef   = useRef<HTMLDivElement>(null);
-  const [showMyMenu,     setShowMyMenu]     = useState(false);
-  const [showNotifPanel, setShowNotifPanel] = useState(false);
-  const [unreadCount,    setUnreadCount]    = useState<number | null>(null);
+  const menuRef       = useRef<HTMLDivElement>(null);
+  const notifRef      = useRef<HTMLDivElement>(null);
+  const [showMyMenu,       setShowMyMenu]       = useState(false);
+  const [showNotifPanel,   setShowNotifPanel]   = useState(false);
+  const [unreadCount,      setUnreadCount]      = useState<number | null>(null);
 
   useEffect(() => {
     function outside(e: MouseEvent) {
@@ -107,11 +111,6 @@ export function TopBar({
           display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
           gap: 14, fontSize: 12, color: '#6B7A6E',
         }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <MapPinIco />
-            <strong style={{ color: '#0F1E12' }}>서울 강남구 역삼동</strong>
-          </span>
-          <span style={{ width: 1, height: 10, background: '#E5E7E1' }} />
           {utilLinks.map((l, i) => (
             <span key={l.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
               {i > 0 && <span style={{ width: 1, height: 10, background: '#E5E7E1' }} />}
@@ -139,37 +138,49 @@ export function TopBar({
           </a>
 
           {/* 내비게이션 */}
-          <nav style={{ display: 'flex', gap: 2 }}>
-            {[
-              { id: 'product', label: '카테고리' },
-              { id: 'ai',      label: 'AI 상담' },
-            ].map(item => {
-              const isActive = activeNavTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onNavTabChange(item.id)}
-                  style={{
-                    fontFamily: 'inherit', fontSize: 15,
-                    fontWeight: isActive ? 800 : 600,
-                    color: isActive ? '#0F1E12' : '#3A4A3F',
-                    background: 'transparent', border: 'none', cursor: 'pointer',
-                    padding: '8px 12px', borderRadius: 8, position: 'relative',
-                    transition: 'color 160ms',
-                  }}
-                >
-                  {item.label}
-                  {item.id === 'ai' && (
-                    <span style={{
-                      position: 'absolute', top: -6, right: -4,
-                      background: '#A8E063', color: '#0F1E12',
-                      fontSize: 9, fontWeight: 800, padding: '1px 4px', borderRadius: 3,
-                      lineHeight: 1.4,
-                    }}>NEW</span>
-                  )}
-                </button>
-              );
-            })}
+          <nav style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            {/* 카테고리 */}
+            <button
+              onClick={() => onNavTabChange('product')}
+              style={{
+                fontFamily: 'inherit', fontSize: 15,
+                fontWeight: activeNavTab === 'product' ? 800 : 600,
+                color: activeNavTab === 'product' ? '#0F1E12' : '#3A4A3F',
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                padding: '8px 12px', borderRadius: 8, transition: 'color 160ms',
+              }}
+            >카테고리</button>
+
+            {/* 조리법 */}
+            <button
+              onClick={() => onNavTabChange('recipe')}
+              style={{
+                fontFamily: 'inherit', fontSize: 15,
+                fontWeight: activeNavTab === 'recipe' ? 800 : 600,
+                color: activeNavTab === 'recipe' ? '#0F1E12' : '#3A4A3F',
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                padding: '8px 12px', borderRadius: 8, transition: 'color 160ms',
+              }}
+            >조리법</button>
+
+            {/* AI 상담 */}
+            <button
+              onClick={() => onNavTabChange('ai')}
+              style={{
+                fontFamily: 'inherit', fontSize: 15,
+                fontWeight: activeNavTab === 'ai' ? 800 : 600,
+                color: activeNavTab === 'ai' ? '#0F1E12' : '#3A4A3F',
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                padding: '8px 12px', borderRadius: 8, position: 'relative', transition: 'color 160ms',
+              }}
+            >
+              AI 상담
+              <span style={{
+                position: 'absolute', top: -6, right: -4,
+                background: '#A8E063', color: '#0F1E12',
+                fontSize: 9, fontWeight: 800, padding: '1px 4px', borderRadius: 3, lineHeight: 1.4,
+              }}>NEW</span>
+            </button>
           </nav>
 
           {/* 검색창 */}
@@ -253,7 +264,7 @@ export function TopBar({
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontWeight: 800, fontSize: 12,
                 }}>
-                  {isLoggedIn ? '박' : <UserIco />}
+                  {isLoggedIn ? PF_CURRENT_USER.name.charAt(0) : <UserIco />}
                 </div>
               </button>
               {showMyMenu && isLoggedIn && (
@@ -263,7 +274,7 @@ export function TopBar({
                   border: '1px solid #E5E7E1', boxShadow: '0 8px 24px rgba(15,30,18,0.12)',
                   overflow: 'hidden', zIndex: 70,
                 }}>
-                  <button style={{ width: '100%', padding: '12px 14px', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 13, color: '#0F1E12', fontFamily: 'inherit' }}>마이페이지</button>
+                  <button onClick={() => { onMyPage?.(); setShowMyMenu(false); }} style={{ width: '100%', padding: '12px 14px', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 13, color: '#0F1E12', fontFamily: 'inherit' }}>마이페이지</button>
                   <button onClick={() => { logout(); setShowMyMenu(false); }} style={{ width: '100%', padding: '12px 14px', textAlign: 'left', background: 'transparent', borderTop: '1px solid #F0F2EC', border: 'none', cursor: 'pointer', fontSize: 13, color: '#D32F2F', fontFamily: 'inherit' }}>로그아웃</button>
                 </div>
               )}
@@ -292,7 +303,10 @@ export function TopBar({
             <ShieldIco />
             <span style={{ color: '#A8E063', fontWeight: 700 }}>안전 필터 ON</span>
             <span style={{ color: '#5A6F60' }}>·</span>
-            <span style={{ color: '#DCE9DF' }}>박지수님 / 새우·게 / 당뇨 식이 적용 중</span>
+            <span style={{ color: '#DCE9DF' }}>
+              {PF_CURRENT_USER.name}님 / {allergenNames.length > 0 ? allergenNames.join('·') : '알레르기 없음'}
+              {diseaseNames.length > 0 && ` / ${diseaseNames.join('·')} 케어`} 적용 중
+            </span>
             <div style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, color: '#A8E063', cursor: 'pointer', fontWeight: 600 }}>
               필터 관리 <ChevRightIco />
             </div>

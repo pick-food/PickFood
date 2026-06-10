@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { Product } from "../models/type";
 import Toast    from "../../../shared/components/Toast";
 import { useToast } from "../hooks/useToast";
+import { useAuth } from "../../auth/store/useAuth";
 
 // Mock allergens per product (keyed by product id) — replace with real API data when available
 const PRODUCT_ALLERGENS: Record<string, string[]> = {
@@ -54,13 +55,22 @@ const BADGE_STYLE: Record<string, { bg: string; color: string }> = {
   recommended: { bg: '#0F1E12', color: '#A8E063' },
 };
 
+const CartIco = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M16 10a4 4 0 01-8 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
 const ProductCard: FC<ProductCardProps> = ({ product, onClick, allergyHits: hitsProp }) => {
   const { brand, name, price, originalPrice, discountRate, rating, reviewCount, badge, imageSrc } = product;
+  const { isLoggedIn } = useAuth();
   const [isHearted, setIsHearted] = useState(false);
   const [burst,     setBurst]     = useState(false);
   const { toast, showToast } = useToast();
 
-  const badgeStyle = BADGE_STYLE[badge] ?? BADGE_STYLE.BEST;
+  const badgeStyle = (badge ? BADGE_STYLE[badge] : undefined) ?? BADGE_STYLE.BEST;
   const discount   = discountRate > 0 ? discountRate : (originalPrice > price ? Math.round((1 - price / originalPrice) * 100) : 0);
 
   // Allergy warning: use prop if provided, otherwise derive from mock data
@@ -96,16 +106,15 @@ const ProductCard: FC<ProductCardProps> = ({ product, onClick, allergyHits: hits
           />
 
           {/* 배지 */}
-          {badge === 'BEST' && (
+          {badge === 'BEST' || badge === 'recommended' ? (
             <span style={{ position: 'absolute', top: 8, left: 8, background: badgeStyle.bg, color: badgeStyle.color, padding: '4px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <ShieldIco /> 맞춤픽
             </span>
-          )}
-          {badge !== 'BEST' && (
+          ) : badge ? (
             <span style={{ position: 'absolute', top: 8, left: 8, background: badgeStyle.bg, color: badgeStyle.color, padding: '4px 8px', borderRadius: 4, fontSize: 11, fontWeight: 800 }}>
-              {badge === 'SALE' ? '특가' : badge}
+              {badge === 'SALE' || badge === 'danger' ? '주의' : badge === 'deal' ? '특가' : badge}
             </span>
-          )}
+          ) : null}
 
           {/* 알레르기 경고 오버레이 */}
           {isDanger && (
@@ -123,6 +132,23 @@ const ProductCard: FC<ProductCardProps> = ({ product, onClick, allergyHits: hits
               </svg>
               <span>{hits.join('·')} 함유</span>
             </div>
+          )}
+
+          {/* 장바구니 버튼 (로그인 시, 이미지 오버레이) */}
+          {isLoggedIn && (
+            <button
+              onClick={e => { e.stopPropagation(); showToast('cart'); }}
+              style={{
+                position: 'absolute', top: 8, right: 48,
+                width: 32, height: 32, borderRadius: 999, border: 'none',
+                background: 'rgba(255,255,255,0.92)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backdropFilter: 'blur(8px)', transition: 'background 200ms',
+              }}
+              aria-label="장바구니"
+            >
+              <CartIco />
+            </button>
           )}
 
           {/* 찜 버튼 */}
@@ -189,6 +215,7 @@ const ProductCard: FC<ProductCardProps> = ({ product, onClick, allergyHits: hits
               </span>
             )}
           </div>
+
         </div>
       </div>
 

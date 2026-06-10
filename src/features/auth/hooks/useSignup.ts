@@ -107,7 +107,9 @@ export function useSignup(onComplete?: () => void | Promise<void>) {
       const result = await verifyPhoneCodeApi(phone);
       if (result.verified) {
         setPhoneStatus("verified");
-        if (result.token) setPhoneVerificationToken(result.token);
+        const raw = result.verificationToken ?? result.token ?? result.verification_token ?? result.phone_token ?? result.phoneToken;
+        const tok = typeof raw === "string" ? raw : "";
+        if (tok) setPhoneVerificationToken(tok);
       } else {
         setPhoneStatus("sent");
         setError("아직 SMS 인증이 완료되지 않았습니다.");

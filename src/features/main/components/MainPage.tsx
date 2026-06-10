@@ -1,7 +1,6 @@
 import { useState, useEffect, type FC } from "react";
 import { useAuth }      from "../../auth/store/useAuth";
 import { useProducts }  from "../../product/hooks/useProducts";
-// import { useCategories } from "../hooks/useCategories";
 import ProductCard      from "../../product/components/ProductCard";
 import type { Product } from "../../product/models/type";
 
@@ -9,7 +8,7 @@ import type { Product } from "../../product/models/type";
 interface MainPageProps {
   onProductClick?: (product: Product) => void;
   onSignup?: () => void;
-  onGoToProduct?: () => void;
+  onGoToProduct?: (cat?: string) => void;
 }
 
 /* ── 공통 SVG 아이콘 ──────────────────────────────────────── */
@@ -60,85 +59,6 @@ const ViewAllBtn: FC<{ onClick?: () => void }> = ({ onClick }) => (
   </button>
 );
 
-/* ── HeroCarousel ────────────────────────────────────────── */
-const HERO_SLIDES = [
-  {
-    id: 'h1', tag: 'CURATED', kicker: '알레르기 안전 라인업',
-    title: '자연 재료\n다채로운 한 끼',
-    desc: '개인별 알레르기 반응 1만 명이 직접 고른 안전 식품 320종',
-    cta: '안전 라인업 보기',
-    img: 'https://images.unsplash.com/photo-1543353071-873f17a7a088?w=1200&q=85&auto=format&fit=crop',
-    bg: '#F0F6F1', accent: '#1F4D2C', textColor: '#0F1E12', meta: '5/12 ~ 5/18',
-  },
-  {
-    id: 'h2', tag: '주간 할인', kicker: '당뇨 케어 라인업',
-    title: '저당·저GI 식품\n최대 35% 할인',
-    desc: '의료 전문 식이 기준 적용 · 28종 한정 특가',
-    cta: '특가 보러가기',
-    img: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1200&q=85&auto=format&fit=crop',
-    bg: '#FFF8EC', accent: '#B97308', textColor: '#0F1E12', meta: '~ 6/12',
-  },
-  {
-    id: 'h3', tag: 'NEW', kicker: '알리샌 인증 라인',
-    title: '국내 최초\n글루텐프리 28종',
-    desc: '의료진 전문 식이 · 첫 주문 기념 무료 배송',
-    cta: '둘러보기',
-    img: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1200&q=85&auto=format&fit=crop',
-    bg: '#FAFAE5', accent: '#1F4D2C', textColor: '#0F1E12', meta: '신규',
-  },
-];
-
-const SIDE_PROMOS = [
-  {
-    bg: '#FFF8EC', accent: '#B97308',
-    kicker: '시간 특가',
-    title: '현미밥 22% 할인',
-    desc: '저당·고식이섬유 베스트셀러 · 단 24시간',
-    img: '/images/products/product2.png',
-    cta: '특가 보기',
-  },
-  {
-    bg: '#F0F6F1', accent: '#1F4D2C',
-    kicker: '신규 회원 혜택',
-    title: '첫 주문 5,000원',
-    desc: '알레르기·질병 프로필 등록 시 즉시 적용',
-    img: '/images/products/product4.png',
-    cta: '회원가입',
-  },
-];
-
-const SidePromo: FC<typeof SIDE_PROMOS[0] & { onCta?: () => void }> = ({ bg, accent, kicker, title, desc, img, cta, onCta }) => (
-  <div
-    onClick={onCta}
-    style={{
-      background: bg, borderRadius: 14, padding: 16,
-      display: 'flex', gap: 14, alignItems: 'center', flex: 1,
-      cursor: 'pointer', overflow: 'hidden', position: 'relative',
-      border: '1px solid rgba(15,30,18,0.05)', minHeight: 0,
-    }}
-  >
-    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: 5, alignSelf: 'flex-start',
-        padding: '3px 8px', background: '#fff', color: accent,
-        borderRadius: 999, fontSize: 10, fontWeight: 800, letterSpacing: '0.04em',
-        border: '1px solid rgba(15,30,18,0.06)', marginBottom: 2,
-      }}>
-        <span style={{ width: 4, height: 4, borderRadius: 999, background: accent }} />
-        {kicker}
-      </div>
-      <div style={{ fontSize: 17, fontWeight: 800, color: '#0F1E12', letterSpacing: '-0.02em', lineHeight: 1.2 }}>{title}</div>
-      <div style={{ fontSize: 11.5, color: '#6B7A6E', lineHeight: 1.45 }}>{desc}</div>
-      <div style={{ marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, color: accent }}>
-        {cta} <ChevRight size={11} color={accent} />
-      </div>
-    </div>
-    <div style={{ width: 88, height: 88, borderRadius: 12, overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(15,30,18,0.06)' }}>
-      <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-    </div>
-  </div>
-);
 
 const CATS = [
   { id: 'all',      name: '전체' },
@@ -152,6 +72,42 @@ const CATS = [
   { id: 'baby',     name: '베이비푸드' },
   { id: 'health',   name: '건강기능식품' },
 ];
+
+const SUB_CATS: Record<string, string[]> = {
+  all:       ['신선식품', '특가·할인', '새벽배송', '베스트', '신규입고', '알레르기 안전'],
+  meat:      ['소고기', '돼지고기', '닭고기', '오리·양고기', '생선', '조개·갑각류', '기타 수산'],
+  fruit:     ['사과·배', '딸기·베리', '감귤·오렌지', '수박·참외', '수입 과일', '건조 과일'],
+  vegetable: ['잎채소', '뿌리채소', '양파·마늘', '버섯류', '새싹·나물', '콩·두부'],
+  dairy:     ['우유·생크림', '요거트', '치즈', '탄산음료', '주스', '두유·대체유', '커피·차'],
+  staple:    ['쌀·잡곡', '면류', '빵·베이커리', '즉석밥', '가정간편식', '소스·양념'],
+  frozen:    ['냉동 밥·반찬', '냉동 육류', '냉동 해산물', '라면', '즉석조리식', '아이스크림'],
+  snack:     ['쿠키·비스킷', '칩·스낵', '캔디·젤리', '초콜릿', '시리얼·그래놀라', '견과류'],
+  baby:      ['이유식', '유아 간식', '분유·두유', '유아 음료', '어린이 영양제'],
+  health:    ['비타민·미네랄', '오메가3', '단백질·보충제', '유산균·프로바이오틱스', '한방·허브', '다이어트'],
+};
+
+/* ── SubCatStrip ─────────────────────────────────────────── */
+const SubCatStrip: FC<{ catId: string; onSelect: (sub: string) => void }> = ({ catId, onSelect }) => {
+  const subs = SUB_CATS[catId] ?? [];
+  if (!subs.length) return null;
+  return (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 28 }}>
+      {subs.map(sub => (
+        <button key={sub} onClick={() => onSelect(sub)} style={{
+          padding: '8px 16px', borderRadius: 999, border: '1px solid #E5E7E1',
+          background: '#fff', color: '#3A4A3F', fontSize: 13, fontWeight: 600,
+          cursor: 'pointer', fontFamily: 'inherit',
+          transition: 'border-color 160ms, background 160ms',
+        }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#1F4D2C'; (e.currentTarget as HTMLButtonElement).style.background = '#F0F6F1'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E5E7E1'; (e.currentTarget as HTMLButtonElement).style.background = '#fff'; }}
+        >
+          {sub}
+        </button>
+      ))}
+    </div>
+  );
+};
 
 /* ── TrustStrip ──────────────────────────────────────────── */
 const TrustStrip: FC = () => {
@@ -246,137 +202,6 @@ const ProductGrid: FC<{ products: Product[]; onProductClick?: (p: Product) => vo
   </div>
 );
 
-/* ── SafetyBanner (로그인 시) ────────────────────────────── */
-const SafetyBanner: FC<{ safeCount: number; dangerCount: number }> = ({ safeCount, dangerCount }) => (
-  <section style={{
-    background: '#fff', border: '1px solid #E5E7E1', borderRadius: 12,
-    padding: '18px 22px', marginBottom: 32,
-    display: 'flex', alignItems: 'center', gap: 20,
-  }}>
-    <div style={{
-      width: 44, height: 44, borderRadius: 999, background: '#0F1E12',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-    }}>
-      <ShieldIco />
-    </div>
-    <div style={{ flex: 1 }}>
-      <div style={{ fontSize: 14, fontWeight: 700, color: '#0F1E12' }}>박지수님 안전 필터 적용 중</div>
-      <div style={{ fontSize: 12, color: '#6B7A6E', marginTop: 2 }}>
-        새우·게 알레르기 / 당뇨 식이 · 전체 식품 중{' '}
-        <strong style={{ color: '#1F6B45' }}>{safeCount}개 안전</strong>,{' '}
-        <strong style={{ color: '#B71C1C' }}>{dangerCount}개 주의</strong>
-      </div>
-    </div>
-    <div style={{ display: 'flex', gap: 6 }}>
-      {['🦐 새우 제외', '🦀 게 제외', '💉 당뇨 식이'].map(tag => (
-        <span key={tag} style={{ padding: '4px 10px', background: '#F0F6F1', color: '#1F4D2C', borderRadius: 999, fontSize: 12, fontWeight: 600 }}>{tag}</span>
-      ))}
-    </div>
-    <button style={{ padding: '8px 14px', border: '1px solid #E5E7E1', borderRadius: 8, background: '#fff', fontFamily: 'inherit', fontSize: 13, fontWeight: 600, color: '#3A4A3F', cursor: 'pointer' }}>
-      필터 관리
-    </button>
-  </section>
-);
-
-/* ── HeroCarousel ────────────────────────────────────────── */
-const HeroCarousel: FC = () => {
-  const [idx, setIdx] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const slide = HERO_SLIDES[idx];
-
-  useEffect(() => {
-    if (paused) return;
-    const t = setInterval(() => setIdx(i => (i + 1) % HERO_SLIDES.length), 5500);
-    return () => clearInterval(t);
-  }, [paused]);
-
-  return (
-    <div
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      style={{
-        position: 'relative', borderRadius: 16, overflow: 'hidden',
-        aspectRatio: '16/7', background: slide.bg,
-        transition: 'background 600ms ease', border: '1px solid rgba(15,30,18,0.05)',
-      }}
-    >
-      {/* Split layout */}
-      <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '1fr 1.05fr' }}>
-        {/* 텍스트 패널 */}
-        <div
-          key={slide.id + '-txt'}
-          className="pf-fade-up"
-          style={{
-            padding: '52px 0 52px 56px',
-            display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14,
-            color: slide.textColor, position: 'relative', zIndex: 1,
-          }}
-        >
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '5px 12px', background: '#fff', color: slide.accent, borderRadius: 999,
-            fontSize: 11, fontWeight: 800, alignSelf: 'flex-start', letterSpacing: '0.06em',
-            border: '1px solid rgba(15,30,18,0.06)',
-          }}>
-            <span style={{ width: 5, height: 5, borderRadius: 999, background: slide.accent }} />
-            {slide.tag}
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: slide.accent }}>{slide.kicker}</div>
-          <h1 style={{ fontSize: 42, fontWeight: 800, lineHeight: 1.12, letterSpacing: '-0.03em', whiteSpace: 'pre-line', marginTop: -2 }}>{slide.title}</h1>
-          <p style={{ fontSize: 14, color: 'rgba(15,30,18,0.65)', lineHeight: 1.55, maxWidth: 340 }}>{slide.desc}</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
-            <button style={{
-              background: '#0F1E12', color: '#fff', border: 'none', borderRadius: 8,
-              padding: '12px 22px', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer',
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-            }}>
-              {slide.cta} <ChevRight color="#fff" />
-            </button>
-            <span style={{ fontSize: 11, color: 'rgba(15,30,18,0.5)', fontWeight: 600 }}>{slide.meta}</span>
-          </div>
-        </div>
-        {/* 이미지 패널 */}
-        <div style={{ position: 'relative', overflow: 'hidden' }}>
-          {HERO_SLIDES.map((h, i) => (
-            <img key={h.id} src={h.img} alt="" style={{
-              position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
-              opacity: i === idx ? 1 : 0,
-              transform: i === idx ? 'scale(1)' : 'scale(1.04)',
-              transition: 'opacity 600ms ease, transform 700ms ease',
-              clipPath: 'polygon(8% 0, 100% 0, 100% 100%, 0 100%)',
-            }} />
-          ))}
-        </div>
-      </div>
-
-      {/* 이전/다음 버튼 */}
-      <button onClick={() => setIdx((idx - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)} style={{
-        position: 'absolute', left: 14, bottom: 14, width: 36, height: 36, borderRadius: 999,
-        border: '1px solid rgba(15,30,18,0.08)', background: 'rgba(255,255,255,0.92)',
-        backdropFilter: 'blur(8px)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2,
-      }}>‹</button>
-      <button onClick={() => setIdx((idx + 1) % HERO_SLIDES.length)} style={{
-        position: 'absolute', left: 56, bottom: 14, width: 36, height: 36, borderRadius: 999,
-        border: '1px solid rgba(15,30,18,0.08)', background: 'rgba(255,255,255,0.92)',
-        backdropFilter: 'blur(8px)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2,
-      }}>›</button>
-
-      {/* 카운터 */}
-      <div style={{
-        position: 'absolute', bottom: 18, right: 18, padding: '6px 12px',
-        background: 'rgba(15,30,18,0.08)', backdropFilter: 'blur(6px)',
-        borderRadius: 999, fontSize: 11, fontWeight: 700, color: '#0F1E12', zIndex: 2,
-        display: 'flex', alignItems: 'center', gap: 8, fontVariantNumeric: 'tabular-nums',
-      }}>
-        <span>{String(idx + 1).padStart(2, '0')}</span>
-        <span style={{ width: 30, height: 2, background: 'rgba(15,30,18,0.15)', borderRadius: 1, position: 'relative', overflow: 'hidden' }}>
-          <span style={{ position: 'absolute', inset: 0, background: slide.accent, width: '60%' }} />
-        </span>
-        <span style={{ color: 'rgba(15,30,18,0.5)' }}>{String(HERO_SLIDES.length).padStart(2, '0')}</span>
-      </div>
-    </div>
-  );
-};
 
 /* ── Countdown ──────────────────────────────────────────── */
 const Countdown: FC = () => {
@@ -399,32 +224,18 @@ const Countdown: FC = () => {
 };
 
 /* ── MainPage ────────────────────────────────────────────── */
-const MainPage: FC<MainPageProps> = ({ onProductClick, onSignup, onGoToProduct }) => {
-  const { isLoggedIn } = useAuth();
-  const { products }   = useProducts();
+const MainPage: FC<MainPageProps> = ({ onProductClick, onGoToProduct }) => {
+  const { isLoggedIn, user } = useAuth();
+  const { products }         = useProducts();
   const [activeCat, setActiveCat] = useState('all');
-
-  const totalCount  = products.length;
-  const safeCount   = Math.floor(totalCount * 0.7);
-  const dangerCount = totalCount - safeCount;
 
   return (
     <div style={{ background: '#fff', paddingBottom: 80 }}>
 
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 40px 0' }}>
 
-        {/* 히어로 캐러셀 + 사이드 프로모 */}
-        <section style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16, marginBottom: 36 }}>
-          <HeroCarousel />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {SIDE_PROMOS.map((sp, i) => (
-              <SidePromo key={i} {...sp} onCta={i === 0 ? onGoToProduct : onSignup} />
-            ))}
-          </div>
-        </section>
-
-        {/* 로그인 - 안전 배너 */}
-        {isLoggedIn && <SafetyBanner safeCount={safeCount} dangerCount={dangerCount} />}
+        {/* 서브카테고리 */}
+        <SubCatStrip catId={activeCat} onSelect={(sub) => onGoToProduct?.(sub)} />
 
         {/* 비로그인 - 알레르기 교육 */}
         {!isLoggedIn && <AllergenGrid />}
@@ -443,7 +254,7 @@ const MainPage: FC<MainPageProps> = ({ onProductClick, onSignup, onGoToProduct }
         {/* 맞춤 추천 */}
         <section style={{ marginBottom: 44 }}>
           <SectionHeader
-            kicker={isLoggedIn ? '박지수님 PICK' : '에디터 추천'}
+            kicker={isLoggedIn ? `${user?.name ?? ''}님 PICK` : '에디터 추천'}
             title={isLoggedIn ? '회원님께 안전한 맞춤 식품' : '이번 주 에디터가 고른 식품'}
             desc={isLoggedIn ? '알레르기·질병을 모두 통과한 식품만 모았습니다' : '영양과 안전 기준으로 검증된 식품입니다'}
             right={<ViewAllBtn />}

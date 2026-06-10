@@ -40,9 +40,11 @@ export function useAllergens() {
   const [allergens, setAllergens] = useState<AllergenWithEmoji[]>([]);
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState<string | null>(null);
+  const [tick, setTick]           = useState(0);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     getAllergens()
       .then(list => {
         const flat = flattenAllergens(list);
@@ -50,7 +52,9 @@ export function useAllergens() {
       })
       .catch(() => setError("알레르기 목록을 불러오지 못했습니다."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [tick]);
 
-  return { allergens, loading, error };
+  const refetch = () => setTick(t => t + 1);
+
+  return { allergens, loading, error, refetch };
 }

@@ -1,4 +1,4 @@
-export type BadgeType = "BEST" | "SALE" | "NEW";
+export type BadgeType = "BEST" | "SALE" | "NEW" | "recommended" | "deal" | "danger" | null;
 
 export interface Product {
   id: string;
@@ -13,4 +13,12 @@ export interface Product {
   badgeBg: string;
   badgeColor: string;
   imageSrc: string;
+  allergens?: string[];
+  category?: string;
+  subcat?: string;
+  origin?: string;
+  tags?: string[];
+  riskDiseases?: string[];
+  nutrition?: { protein: number; carb: number; fat: number; sodium: number; sugar: number; kcal: number };
+  delivery?: string;
 }

@@ -7,92 +7,108 @@ interface ActionButton {
 }
 
 interface AuthResultPageProps {
-  // 체크 아이콘 색상 (기본 green)
   iconColor?: string;
-  // 메인 타이틀
+  iconType?: "check" | "x";
   title: string;
-  // 타이틀 아래 설명 (선택)
   description?: string;
-  // 타이틀과 버튼 사이 추가 콘텐츠 (선택)
   extra?: ReactNode;
-  // 하단 버튼들 (1~2개)
   buttons: ActionButton[];
 }
 
-/**
- * 회원가입 완료 / 아이디 찾기 결과 / 비밀번호 변경 완료 등
- * 동일한 레이아웃을 공유하는 결과 페이지 공통 컴포넌트
- */
 const AuthResultPage: FC<AuthResultPageProps> = ({
-  iconColor = "#00C900",
+  iconColor = "#1F4D2C",
+  iconType  = "check",
   title,
   description,
   extra,
   buttons,
 }) => {
+  const isError  = iconType === "x";
+  const circBg   = isError ? "rgba(211,47,47,0.10)"  : "rgba(31,77,44,0.10)";
+  const borderC  = isError ? "rgba(211,47,47,0.18)"  : "rgba(31,77,44,0.18)";
+  const color    = isError ? "#D32F2F" : iconColor;
+
   return (
-    <div className="flex-1 bg-white flex items-center justify-center">
-      <div className="w-[360px] flex flex-col items-center">
+    <div style={{ background: '#FAFAF6', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+      <div style={{ width: '100%', maxWidth: 440 }}>
 
-        {/* 체크 아이콘 */}
-        <svg
-          width="60"
-          height="60"
-          viewBox="0 0 60 60"
-          fill="none"
-          className="mb-[20px]"
-        >
-          <path
-            d="M10 32L24 46L50 18"
-            stroke={iconColor}
-            strokeWidth="6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-
-        {/* 메인 타이틀 */}
-        <h1 className="text-[18px] font-medium leading-[140%] text-black text-center mb-[10px]">
-          {title}
-        </h1>
-
-        {/* 설명 */}
-        {description && (
-          <p className="text-[13px] font-medium leading-[140%] text-gray-600 text-center mb-[16px]">
-            {description}
-          </p>
-        )}
-
-        {/* 추가 콘텐츠 (아이디 표시 박스 등) */}
-        {extra && (
-          <div className="w-full mb-[20px]">{extra}</div>
-        )}
-
-        {/* 버튼 영역 */}
-        <div className="w-full flex gap-[8px]">
-          {buttons.map((btn, i) => (
-            btn.variant === "filled" ? (
-              <button
-                key={i}
-                type="button"
-                onClick={btn.onClick}
-                className="flex-1 h-[44px] bg-primary rounded-xs text-[13px] font-medium text-white hover:bg-primary-dark transition-colors"
-              >
-                {btn.label}
-              </button>
+        {/* Icon */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+          <div style={{
+            width: 80, height: 80, borderRadius: 999,
+            background: circBg, border: `2px solid ${borderC}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {isError ? (
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6l12 12" stroke={color} strokeWidth="2.4" strokeLinecap="round"/>
+              </svg>
             ) : (
-              <button
-                key={i}
-                type="button"
-                onClick={btn.onClick}
-                className="flex-1 h-[44px] border border-primary rounded-xs text-[13px] font-medium text-primary hover:bg-primary-light transition-colors"
-              >
-                {btn.label}
-              </button>
-            )
-          ))}
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
+                <path d="M5 13l4 4L19 7" stroke={color} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </div>
         </div>
 
+        {/* Card */}
+        <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #E5E7E1', padding: '32px 28px', textAlign: 'center' }}>
+
+          {/* Title */}
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F1E12', letterSpacing: '-0.02em', lineHeight: 1.4, marginBottom: description || extra ? 14 : 28, whiteSpace: 'pre-line' }}>
+            {title}
+          </h1>
+
+          {/* Description */}
+          {description && (
+            <p style={{ fontSize: 14, color: '#6B7A6E', lineHeight: 1.7, marginBottom: extra ? 20 : 28, whiteSpace: 'pre-line' }}>
+              {description}
+            </p>
+          )}
+
+          {/* Extra */}
+          {extra && (
+            <div style={{ marginBottom: 28 }}>{extra}</div>
+          )}
+
+          {/* Buttons */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            {buttons.map((btn, i) =>
+              btn.variant === "filled" ? (
+                <button
+                  key={i}
+                  onClick={btn.onClick}
+                  style={{
+                    flex: 1, height: 50, borderRadius: 12, border: 'none', cursor: 'pointer',
+                    fontFamily: 'inherit', fontSize: 15, fontWeight: 700, color: '#fff',
+                    background: 'linear-gradient(135deg, #1F4D2C, #2A6339)',
+                    boxShadow: '0 4px 14px rgba(31,77,44,0.22)', transition: 'opacity 160ms',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
+                  onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                >
+                  {btn.label}
+                </button>
+              ) : (
+                <button
+                  key={i}
+                  onClick={btn.onClick}
+                  style={{
+                    flex: 1, height: 50, borderRadius: 12, cursor: 'pointer',
+                    fontFamily: 'inherit', fontSize: 15, fontWeight: 700,
+                    color: '#1F4D2C', background: '#fff',
+                    border: '1.5px solid #1F4D2C', transition: 'background 160ms',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#F0F6F1')}
+                  onMouseLeave={e => (e.currentTarget.style.background = '#fff')}
+                >
+                  {btn.label}
+                </button>
+              )
+            )}
+          </div>
+
+        </div>
       </div>
     </div>
   );

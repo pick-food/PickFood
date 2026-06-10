@@ -9,27 +9,27 @@ import FindIdPage         from "./features/auth/components/FindIdPage";
 import FindPasswordPage   from "./features/auth/components/FindPasswordPage";
 import ProductPage        from "./features/product/components/ProductPage";
 import ProductDetailPage  from "./features/product/components/ProductDetailPage";
+import RecipePage         from "./features/recipe/components/RecipePage";
+import MyPage             from "./features/mypage/components/MyPage";
 import { useAuth }        from "./features/auth/store/useAuth";
 import type { Product }   from "./features/product/models/type";
 import Chatbot            from "./features/chat/components/Chatbot";
 
-type Page = "main" | "login" | "signup" | "signupComplete" | "findId" | "findPassword" | "product";
+type Page = "main" | "login" | "signup" | "signupComplete" | "findId" | "findPassword" | "product" | "mypage" | "recipe";
 
-// 페이지 → activeNavTab 매핑
 const PAGE_TO_TAB: Partial<Record<Page, string>> = {
   main:    "all",
   product: "product",
+  recipe:  "recipe",
 };
 
 function AppInner() {
   const { isLoggedIn } = useAuth();
-  const [page, setPage]                       = useState<Page>("main");
-  const [activeNavTab, setActiveNavTab]       = useState<string | null>("all");
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [page, setPage]                         = useState<Page>("main");
+  const [activeNavTab, setActiveNavTab]         = useState<string | null>("all");
+  const [selectedProduct, setSelectedProduct]   = useState<Product | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
 
-  // 이미 로그인된 상태로 앱이 로드될 때(새로고침 등) 메인으로 이동.
-  // isLoggedIn 변경 시마다 실행하면 회원가입 완료 후 signupComplete 대신 main으로
-  // 튕기는 문제가 생기므로 마운트 시 1회만 실행.
   useEffect(() => {
     if (isLoggedIn) {
       setPage("main");
@@ -41,19 +41,26 @@ function AppInner() {
   function goTo(p: Page) {
     setPage(p);
     setSelectedProduct(null);
-    // 페이지에 대응하는 탭이 있으면 설정, 없으면 null (로그인 등)
     setActiveNavTab(PAGE_TO_TAB[p] ?? null);
   }
+
+  const NAV_TO_CAT: Record<string, string> = {
+    meat: 'protein', fruit: 'fruit', vegetable: 'veg',
+    dairy: 'dairy', staple: 'staple', frozen: 'ready',
+    snack: 'snack', baby: 'baby', health: 'health',
+  };
 
   function handleNavTabChange(id: string) {
     setActiveNavTab(id);
     if (id === "all") {
       goTo("main");
     } else if (id === "ai") {
-      // Open the floating chatbot widget without navigating
       window.dispatchEvent(new CustomEvent("pickfood:openchat"));
+    } else if (id === "recipe") {
+      goTo("recipe");
     } else {
-      // All food category tabs go to the product listing page
+      const cat = NAV_TO_CAT[id] ?? id;
+      setSelectedCategory(cat);
       goTo("product");
     }
   }
@@ -67,10 +74,11 @@ function AppInner() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ position: 'relative' }}>
+    <div className="min-h-screen flex flex-col bg-[#FAFAF6]" style={{ position: 'relative' }}>
       <TopBar
         onLogin={() => goTo("login")}
         onSignup={() => goTo("signup")}
+        onMyPage={() => goTo("mypage")}
         isLoginActive={page === "login"}
         isSignupActive={page === "signup"}
         isLoggedIn={isLoggedIn}
@@ -84,13 +92,11 @@ function AppInner() {
               product={selectedProduct}
               onBack={() => setSelectedProduct(null)}
             />
-            <div className="mt-[30px]">
-              <Footer />
-            </div>
+            <Footer />
           </>
         ) : (
           <div className="flex-1 flex flex-col">
-            {page === "main"           && <MainPage onProductClick={handleProductClick} onSignup={() => goTo("signup")} onGoToProduct={() => goTo("product")} />}
+            {page === "main"           && <MainPage onProductClick={handleProductClick} onGoToProduct={(cat) => { setSelectedCategory(cat); goTo("product"); }} />}
             {page === "login"          && (
               <LoginPage
                 onSuccess={() => goTo("main")}
@@ -122,11 +128,15 @@ function AppInner() {
               />
             )}
             {page === "product"        && (
-              <ProductPage onProductClick={handleProductClick} />
+              <ProductPage onProductClick={handleProductClick} initialCategory={selectedCategory} />
             )}
-            <div className="mt-[30px]">
-              <Footer />
-            </div>
+            {page === "recipe"         && (
+              <RecipePage onBack={() => goTo("main")} />
+            )}
+            {page === "mypage"         && (
+              <MyPage onBack={() => goTo("main")} />
+            )}
+            <Footer />
           </div>
         )}
       </main>

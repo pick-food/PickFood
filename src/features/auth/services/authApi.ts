@@ -54,11 +54,12 @@ export async function sendPhoneCode(phone: string): Promise<string> {
 // ── 휴대폰 인증 완료  POST /auth/phone/verify ────────────────────────────────
 export async function verifyPhoneCode(
   phone: string
-): Promise<{ verified: boolean; token?: string }> {
-  const res = await apiClient.post<ApiResponse<{ verified: boolean; token?: string }>>(
+): Promise<Record<string, unknown>> {
+  const res = await apiClient.post<ApiResponse<Record<string, unknown>>>(
     "/auth/phone/verify",
     { phone: phone.replace(/-/g, ""), purpose: "self" }
   );
+  console.log("[phone/verify] response data:", res.data.data);
   return res.data.data;
 }
 
