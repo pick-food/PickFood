@@ -612,7 +612,10 @@ const ProductDetailPage: FC<ProductDetailPageProps> = ({ product, onBack }) => {
         </div>
       </div>
 
-      <Toast toast={toast} onNavigate={() => {}} />
+      <Toast toast={toast} onNavigate={type => {
+        const tab = type === 'heart' ? 'wishlist' : 'cart';
+        window.dispatchEvent(new CustomEvent("pickfood:navigate", { detail: { tab } }));
+      }} />
     </>
   );
 };

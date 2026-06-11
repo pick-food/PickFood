@@ -14,8 +14,10 @@ import MyPage             from "./features/mypage/components/MyPage";
 import { useAuth }        from "./features/auth/store/useAuth";
 import type { Product }   from "./features/product/models/type";
 import Chatbot            from "./features/chat/components/Chatbot";
+import LoginRequired     from "./shared/components/LoginRequired";
 
-type Page = "main" | "login" | "signup" | "signupComplete" | "findId" | "findPassword" | "product" | "mypage" | "recipe";
+type Page    = "main" | "login" | "signup" | "signupComplete" | "findId" | "findPassword" | "product" | "mypage" | "recipe" | "loginRequired";
+type MyTab   = "orders" | "cart" | "wishlist" | "safety" | "address" | "profile" | "notifications";
 
 const PAGE_TO_TAB: Partial<Record<Page, string>> = {
   main:    "all",
@@ -29,6 +31,7 @@ function AppInner() {
   const [activeNavTab, setActiveNavTab]         = useState<string | null>("all");
   const [selectedProduct, setSelectedProduct]   = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
+  const [myPageTab, setMyPageTab]               = useState<MyTab>("orders");
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -38,13 +41,30 @@ function AppInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    function handleNavigate(e: Event) {
+      const tab = (e as CustomEvent<{ tab: MyTab }>).detail?.tab;
+      if (tab && isLoggedIn) goToMyPage(tab);
+    }
+    window.addEventListener("pickfood:navigate", handleNavigate);
+    return () => window.removeEventListener("pickfood:navigate", handleNavigate);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn]);
+
   function goTo(p: Page) {
     setPage(p);
     setSelectedProduct(null);
     setActiveNavTab(PAGE_TO_TAB[p] ?? null);
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  }
+
+  function goToMyPage(tab: MyTab) {
+    setMyPageTab(tab);
+    goTo("mypage");
   }
 
   const NAV_TO_CAT: Record<string, string> = {
+    product: 'protein',
     meat: 'protein', fruit: 'fruit', vegetable: 'veg',
     dairy: 'dairy', staple: 'staple', frozen: 'ready',
     snack: 'snack', baby: 'baby', health: 'health',
@@ -55,10 +75,13 @@ function AppInner() {
     if (id === "all") {
       goTo("main");
     } else if (id === "ai") {
+      if (!isLoggedIn) { goTo("loginRequired"); return; }
       window.dispatchEvent(new CustomEvent("pickfood:openchat"));
     } else if (id === "recipe") {
+      if (!isLoggedIn) { goTo("loginRequired"); return; }
       goTo("recipe");
     } else {
+      if (!isLoggedIn) { goTo("loginRequired"); return; }
       const cat = NAV_TO_CAT[id] ?? id;
       setSelectedCategory(cat);
       goTo("product");
@@ -67,18 +90,20 @@ function AppInner() {
 
   function handleProductClick(product: Product) {
     if (!isLoggedIn) {
-      goTo("login");
+      goTo("loginRequired");
       return;
     }
     setSelectedProduct(product);
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAFAF6]" style={{ position: 'relative' }}>
+    <div className="min-h-screen flex flex-col" style={{ position: 'relative', background: '#fff' }}>
       <TopBar
         onLogin={() => goTo("login")}
         onSignup={() => goTo("signup")}
-        onMyPage={() => goTo("mypage")}
+        onMyPage={() => isLoggedIn ? goToMyPage("orders") : goTo("loginRequired")}
+        onWishlist={() => isLoggedIn ? goToMyPage("wishlist") : goTo("loginRequired")}
+        onCart={() => isLoggedIn ? goToMyPage("cart") : goTo("loginRequired")}
         isLoginActive={page === "login"}
         isSignupActive={page === "signup"}
         isLoggedIn={isLoggedIn}
@@ -134,7 +159,10 @@ function AppInner() {
               <RecipePage onBack={() => goTo("main")} />
             )}
             {page === "mypage"         && (
-              <MyPage onBack={() => goTo("main")} />
+              <MyPage onBack={() => goTo("main")} initialTab={myPageTab} onProductClick={handleProductClick} />
+            )}
+            {page === "loginRequired"  && (
+              <LoginRequired onLogin={() => goTo("login")} />
             )}
             <Footer />
           </div>

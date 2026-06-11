@@ -16,7 +16,7 @@ const TOAST_CONFIG: Record<ToastType, { message: string; cta?: string }> = {
 
 interface ToastProps {
   toast: ToastMessage;
-  onNavigate?: () => void;
+  onNavigate?: (type: ToastType) => void;
 }
 
 const Toast: FC<ToastProps> = ({ toast, onNavigate }) => {
@@ -29,7 +29,7 @@ const Toast: FC<ToastProps> = ({ toast, onNavigate }) => {
       {config.cta && onNavigate && (
         <button
           type="button"
-          onClick={onNavigate}
+          onClick={() => onNavigate(toast.type)}
           className="flex items-center gap-[4px] text-[12px] font-semibold text-lime"
         >
           {config.cta}

@@ -5,7 +5,6 @@ import { NavBar }     from './components/NavBar';
 import { useAuth }    from '../../features/auth/store/useAuth';
 import { useMyAllergenSummary } from '../../features/allergen/hooks/useMyAllergenSummary';
 import NotificationPanel from '../../features/notification/components/NotificationPanel';
-import { PF_CURRENT_USER } from '../../data/pfData';
 
 interface TopBarProps {
   onSearch?:       (query: string) => void;
@@ -13,6 +12,8 @@ interface TopBarProps {
   onSignup?:       () => void;
   onSupport?:      () => void;
   onMyPage?:       () => void;
+  onWishlist?:     () => void;
+  onCart?:         () => void;
   isLoginActive?:  boolean;
   isSignupActive?: boolean;
   isLoggedIn:      boolean;
@@ -72,13 +73,15 @@ export function TopBar({
   onLogin,
   onSignup,
   onMyPage,
+  onWishlist,
+  onCart,
   isLoginActive: _isLoginActive,
   isSignupActive: _isSignupActive,
   isLoggedIn,
   activeNavTab,
   onNavTabChange,
 }: TopBarProps) {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { allergenNames, diseaseNames } = useMyAllergenSummary();
   const { search: _search, filter: _filter, tabs } = useTopBar(onSearch);
   const [q, setQ] = useState('');
@@ -244,8 +247,8 @@ export function TopBar({
                 />
               )}
             </div>
-            <BadgeBtn icon={<HeartIco />} label="찜"      badge={isLoggedIn ? 0 : null} onClick={() => onNavTabChange('product')} />
-            <BadgeBtn icon={<CartIco />}  label="장바구니" badge={isLoggedIn ? 0 : null} onClick={() => onNavTabChange('product')} />
+            <BadgeBtn icon={<HeartIco />} label="찜"      badge={isLoggedIn ? 0 : null} onClick={() => isLoggedIn ? onWishlist?.() : onLogin?.()} />
+            <BadgeBtn icon={<CartIco />}  label="장바구니" badge={isLoggedIn ? 0 : null} onClick={() => isLoggedIn ? onCart?.()    : onLogin?.()} />
 
             {/* 마이페이지 */}
             <div ref={menuRef} style={{ position: 'relative' }}>
@@ -264,7 +267,7 @@ export function TopBar({
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontWeight: 800, fontSize: 12,
                 }}>
-                  {isLoggedIn ? PF_CURRENT_USER.name.charAt(0) : <UserIco />}
+                  {isLoggedIn ? (user?.name ?? '?').charAt(0) : <UserIco />}
                 </div>
               </button>
               {showMyMenu && isLoggedIn && (
@@ -304,7 +307,7 @@ export function TopBar({
             <span style={{ color: '#A8E063', fontWeight: 700 }}>안전 필터 ON</span>
             <span style={{ color: '#5A6F60' }}>·</span>
             <span style={{ color: '#DCE9DF' }}>
-              {PF_CURRENT_USER.name}님 / {allergenNames.length > 0 ? allergenNames.join('·') : '알레르기 없음'}
+              {user?.name ?? '회원'}님 / {allergenNames.length > 0 ? allergenNames.join('·') : '알레르기 없음'}
               {diseaseNames.length > 0 && ` / ${diseaseNames.join('·')} 케어`} 적용 중
             </span>
             <div style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, color: '#A8E063', cursor: 'pointer', fontWeight: 600 }}>

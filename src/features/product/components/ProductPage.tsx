@@ -1,11 +1,10 @@
-import { useState, useEffect, type FC } from "react";
-import { useProducts } from "../hooks/useProducts";
-import ProductCard from "./ProductCard";
-import type { Product } from "../models/type";
-import {
-  PF_ALLERGY_GROUPS, PF_ALLERGENS, PF_DISEASES,
-  PF_CURRENT_USER, getPFActiveAllergenNames, getPFActiveDiseaseNames,
-} from "../../../data/pfData";
+import { useState, useEffect, useMemo, type FC } from "react";
+import { useProducts }          from "../hooks/useProducts";
+import { useAuth }              from "../../auth/store/useAuth";
+import { useMyAllergenSummary } from "../../allergen/hooks/useMyAllergenSummary";
+import { useAllergenData }      from "../../allergen/hooks/useAllergenData";
+import ProductCard              from "./ProductCard";
+import type { Product }         from "../models/type";
 
 interface ProductPageProps {
   onProductClick?: (product: Product) => void;
@@ -144,6 +143,12 @@ interface SidebarProps {
   onToggleGroup: (id: string) => void;
   excludedAllergens: string[];
   onToggleAllergen: (n: string) => void;
+  userName?: string;
+  userAllergenNames: string[];
+  userDiseaseNames: string[];
+  allergenGroups: { id: string; name: string; allergenNames: string[] }[];
+  availableAllergens: { id: string; name: string }[];
+  availableDiseases: { id: string; name: string }[];
   excludedDiseases: string[];
   onToggleDisease: (n: string) => void;
   maxPrice: number;
@@ -187,6 +192,8 @@ const FilterSidebar: FC<SidebarProps> = ({
   selectedOrigins, onToggleOrigin,
   selectedCerts, onToggleCert,
   selectedDelivery, onToggleDelivery,
+  userName, userAllergenNames, userDiseaseNames,
+  allergenGroups, availableAllergens, availableDiseases,
   discountOnly, onDiscountOnly,
   onReset,
 }) => {
@@ -195,8 +202,6 @@ const FilterSidebar: FC<SidebarProps> = ({
   catProducts.forEach(p => { brandCounts[p.brand] = (brandCounts[p.brand] ?? 0) + 1; });
   const brands  = Object.entries(brandCounts).sort((a, b) => b[1] - a[1]);
   const allTags = [...new Set(catProducts.flatMap(p => p.tags ?? []))];
-  const activeAllergenNames = getPFActiveAllergenNames();
-  const activeDiseaseNames  = getPFActiveDiseaseNames();
 
   return (
     <aside style={{
@@ -228,9 +233,14 @@ const FilterSidebar: FC<SidebarProps> = ({
               <ShieldIco />
               <span style={{ fontSize: 12, fontWeight: 700, color: '#0F1E12' }}>안전 식품만 보기</span>
             </div>
-            {(activeAllergenNames.length > 0 || activeDiseaseNames.length > 0) && (
+            {userName && (userAllergenNames.length > 0 || userDiseaseNames.length > 0) && (
               <div style={{ fontSize: 10, color: '#6B7A6E', marginTop: 2, lineHeight: 1.4 }}>
-                {PF_CURRENT_USER.name}님 프로필 자동 적용
+                {userName}님 프로필 자동 적용
+              </div>
+            )}
+            {userName && userAllergenNames.length === 0 && userDiseaseNames.length === 0 && (
+              <div style={{ fontSize: 10, color: '#B0BAB3', marginTop: 2, lineHeight: 1.4 }}>
+                등록된 알레르기·지병 없음
               </div>
             )}
           </div>
@@ -239,21 +249,20 @@ const FilterSidebar: FC<SidebarProps> = ({
 
       {/* 알레르기 그룹 */}
       <FSection title="알레르기 그룹 제외">
-        {PF_ALLERGY_GROUPS.map(g => {
-          const names = g.allergens.map(id => PF_ALLERGENS.find(a => a.id === id)?.name ?? '').filter(Boolean);
-          return (
-            <div key={g.id} style={{ marginBottom: 4 }}>
-              <CheckRow label={g.name} checked={excludedGroups.includes(g.id)} onChange={() => onToggleGroup(g.id)} />
-              <div style={{ paddingLeft: 23, fontSize: 10, color: '#B0BAB3', marginTop: -4, marginBottom: 2 }}>{names.join(', ')}</div>
-            </div>
-          );
-        })}
+        {allergenGroups.length === 0 ? (
+          <div style={{ fontSize: 11, color: '#B0BAB3', padding: '6px 0' }}>등록된 알레르기 그룹이 없습니다</div>
+        ) : allergenGroups.map(g => (
+          <div key={g.id} style={{ marginBottom: 4 }}>
+            <CheckRow label={g.name} checked={excludedGroups.includes(g.id)} onChange={() => onToggleGroup(g.id)} />
+            <div style={{ paddingLeft: 23, fontSize: 10, color: '#B0BAB3', marginTop: -4, marginBottom: 2 }}>{g.allergenNames.join(', ')}</div>
+          </div>
+        ))}
       </FSection>
 
       {/* 개별 알레르기 */}
       <FSection title="개별 알레르기 제외" defaultOpen={false}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, paddingTop: 2 }}>
-          {PF_ALLERGENS.map(a => (
+          {availableAllergens.map(a => (
             <PillBtn key={a.id} label={a.name} active={excludedAllergens.includes(a.name)} danger onClick={() => onToggleAllergen(a.name)} />
           ))}
         </div>
@@ -262,7 +271,7 @@ const FilterSidebar: FC<SidebarProps> = ({
       {/* 지병 케어 */}
       <FSection title="지병 케어 라인" defaultOpen={false}>
         <div style={{ fontSize: 10, color: '#B0BAB3', marginBottom: 7, lineHeight: 1.4 }}>선택 시 해당 지병 주의 상품이 제외됩니다</div>
-        {PF_DISEASES.map(d => (
+        {availableDiseases.map(d => (
           <CheckRow key={d.id} label={d.name} checked={excludedDiseases.includes(d.name)} onChange={() => onToggleDisease(d.name)} />
         ))}
       </FSection>
@@ -335,7 +344,12 @@ const FilterSidebar: FC<SidebarProps> = ({
 
 /* ── ProductPage ─────────────────────── */
 const ProductPage: FC<ProductPageProps> = ({ onProductClick, initialCategory }) => {
-  const { products } = useProducts();
+  const { products }                           = useProducts();
+  const { user }                               = useAuth();
+  const { allergenNames: userAllergenNames,
+          diseaseNames:  userDiseaseNames }     = useMyAllergenSummary();
+  const { myGroups, availableAllergens,
+          availableDiseases }                  = useAllergenData();
   const [activeCat,  setActiveCat]  = useState(initialCategory ?? 'protein');
   const [activeSub,  setActiveSub]  = useState('전체');
 
@@ -373,59 +387,59 @@ const ProductPage: FC<ProductPageProps> = ({ onProductClick, initialCategory }) 
     discountOnly,
   ]);
 
-  const safeAllergenNames = getPFActiveAllergenNames();
-  const safeDiseaseNames  = getPFActiveDiseaseNames();
-
   const groupAllergenNames = [...new Set(
     excludedGroups.flatMap(gid => {
-      const g = PF_ALLERGY_GROUPS.find(g => g.id === gid);
-      return (g?.allergens ?? []).map(aid => PF_ALLERGENS.find(a => a.id === aid)?.name ?? '');
-    }).filter(Boolean),
+      const g = myGroups.find(g => g.id === gid);
+      return g?.allergenNames ?? [];
+    }),
   )];
 
   const allExcludedAllergens = [...new Set([
-    ...(safeOnly ? safeAllergenNames : []),
+    ...(safeOnly ? userAllergenNames : []),
     ...groupAllergenNames,
     ...excludedAllergens,
   ])];
   const allExcludedDiseases = [...new Set([
-    ...(safeOnly ? safeDiseaseNames : []),
+    ...(safeOnly ? userDiseaseNames : []),
     ...excludedDiseases,
   ])];
 
-  const filtered = products.filter(p => {
-    if (p.category !== activeCat) return false;
-    if (activeSub !== '전체' && p.subcat !== activeSub) return false;
-    if (query && !p.name.includes(query) && !p.brand.includes(query)) return false;
-    if (allExcludedAllergens.length > 0 && (p.allergens ?? []).some(a => allExcludedAllergens.includes(a))) return false;
-    if (allExcludedDiseases.length > 0 && (p.riskDiseases ?? []).some(d => allExcludedDiseases.includes(d))) return false;
-    if (p.price > maxPrice) return false;
-    if (p.nutrition) {
-      if (p.nutrition.sugar   > maxSugar)   return false;
-      if (p.nutrition.sodium  > maxSodium)  return false;
-      if (p.nutrition.protein < minProtein) return false;
-      if (p.nutrition.fat     > maxFat)     return false;
-      if (p.nutrition.kcal    > maxKcal)    return false;
-    }
-    if (selectedBrands.length   > 0 && !selectedBrands.includes(p.brand))                          return false;
-    if (selectedTags.length     > 0 && !selectedTags.some(t => (p.tags ?? []).includes(t)))        return false;
-    if (selectedOrigins.length  > 0 && !selectedOrigins.includes(p.origin ?? ''))                  return false;
-    if (selectedCerts.length    > 0 && !selectedCerts.some(c => (p.tags ?? []).includes(c)))       return false;
-    if (selectedDelivery.length > 0 && !selectedDelivery.includes(p.delivery ?? ''))               return false;
-    if (discountOnly && p.discountRate === 0) return false;
-    return true;
-  });
-
-  const sorted = [...filtered].sort((a, b) => {
-    switch (sort) {
-      case 'popular':   return b.reviewCount - a.reviewCount;
-      case 'priceLow':  return a.price - b.price;
-      case 'priceHigh': return b.price - a.price;
-      case 'rating':    return b.rating - a.rating;
-      case 'protein':   return (b.nutrition?.protein ?? 0) - (a.nutrition?.protein ?? 0);
-      default:          return 0;
-    }
-  });
+  const sorted = useMemo(() => {
+    const filtered = products.filter(p => {
+      if (p.category !== activeCat) return false;
+      if (activeSub !== '전체' && p.subcat !== activeSub) return false;
+      if (query && !p.name.includes(query) && !p.brand.includes(query)) return false;
+      if (allExcludedAllergens.length > 0 && (p.allergens ?? []).some(a => allExcludedAllergens.includes(a))) return false;
+      if (allExcludedDiseases.length > 0 && (p.riskDiseases ?? []).some(d => allExcludedDiseases.includes(d))) return false;
+      if (p.price > maxPrice) return false;
+      if (p.nutrition) {
+        if (p.nutrition.sugar   > maxSugar)   return false;
+        if (p.nutrition.sodium  > maxSodium)  return false;
+        if (p.nutrition.protein < minProtein) return false;
+        if (p.nutrition.fat     > maxFat)     return false;
+        if (p.nutrition.kcal    > maxKcal)    return false;
+      }
+      if (selectedBrands.length   > 0 && !selectedBrands.includes(p.brand))                          return false;
+      if (selectedTags.length     > 0 && !selectedTags.some(t => (p.tags ?? []).includes(t)))        return false;
+      if (selectedOrigins.length  > 0 && !selectedOrigins.includes(p.origin ?? ''))                  return false;
+      if (selectedCerts.length    > 0 && !selectedCerts.some(c => (p.tags ?? []).includes(c)))       return false;
+      if (selectedDelivery.length > 0 && !selectedDelivery.includes(p.delivery ?? ''))               return false;
+      if (discountOnly && p.discountRate === 0) return false;
+      return true;
+    });
+    return [...filtered].sort((a, b) => {
+      switch (sort) {
+        case 'popular':   return b.reviewCount - a.reviewCount;
+        case 'priceLow':  return a.price - b.price;
+        case 'priceHigh': return b.price - a.price;
+        case 'rating':    return b.rating - a.rating;
+        case 'protein':   return (b.nutrition?.protein ?? 0) - (a.nutrition?.protein ?? 0);
+        default:          return 0;
+      }
+    });
+  }, [products, activeCat, activeSub, query, sort, allExcludedAllergens, allExcludedDiseases,
+      maxPrice, maxSugar, maxSodium, minProtein, maxFat, maxKcal,
+      selectedBrands, selectedTags, selectedOrigins, selectedCerts, selectedDelivery, discountOnly]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
   const pageItems  = sorted.slice((curPage - 1) * PER_PAGE, curPage * PER_PAGE);
@@ -446,7 +460,7 @@ const ProductPage: FC<ProductPageProps> = ({ onProductClick, initialCategory }) 
   const activeChips: Chip[] = [
     ...(safeOnly ? [{ label: '안전 필터 ON', onRemove: () => setSafeOnly(false) }] : []),
     ...excludedGroups.map(gid => {
-      const g = PF_ALLERGY_GROUPS.find(g => g.id === gid);
+      const g = myGroups.find(g => g.id === gid);
       return { label: `${g?.name ?? gid} 그룹 제외`, onRemove: () => setExcludedGroups(prev => prev.filter(x => x !== gid)) };
     }),
     ...excludedAllergens.map(a => ({ label: `${a} 제외`, onRemove: () => setExcludedAllergens(prev => prev.filter(x => x !== a)) })),
@@ -459,7 +473,7 @@ const ProductPage: FC<ProductPageProps> = ({ onProductClick, initialCategory }) 
     ...(maxPrice < 30000 ? [{ label: `${maxPrice.toLocaleString()}원↓`, onRemove: () => setMaxPrice(30000) }] : []),
   ];
 
-  const safeCount = filtered.filter(p =>
+  const safeCount = sorted.filter(p =>
     (p.allergens ?? []).length === 0 ||
     (p.allergens ?? []).every(a => !allExcludedAllergens.includes(a)),
   ).length;
@@ -468,13 +482,13 @@ const ProductPage: FC<ProductPageProps> = ({ onProductClick, initialCategory }) 
     <div style={{ background: '#FAFAF6', minHeight: '100vh', paddingBottom: 80 }}>
 
       {/* 카테고리 헤더 배너 */}
-      <div style={{ background: 'linear-gradient(120deg, #0F1E12 0%, #1F4D2C 55%, #2E7D32 100%)', padding: '24px 40px 20px' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+      <div style={{ background: 'linear-gradient(120deg, #0F1E12 0%, #1F4D2C 55%, #2E7D32 100%)' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 40px 20px' }}>
           <h1 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 4 }}>
             {CAT_NAMES[activeCat] ?? activeCat}
           </h1>
           <div style={{ fontSize: 12, color: '#A8E063', display: 'flex', gap: 10 }}>
-            <span>총 <strong>{filtered.length}</strong>개</span>
+            <span>총 <strong>{sorted.length}</strong>개</span>
             <span style={{ opacity: 0.5 }}>·</span>
             <span>안전 상품 <strong>{safeCount}</strong>개</span>
           </div>
@@ -539,6 +553,12 @@ const ProductPage: FC<ProductPageProps> = ({ onProductClick, initialCategory }) 
             onToggleAllergen={n => setExcludedAllergens(prev => tog(prev, n))}
             excludedDiseases={excludedDiseases}
             onToggleDisease={n => setExcludedDiseases(prev => tog(prev, n))}
+            userName={user?.name}
+            userAllergenNames={userAllergenNames}
+            userDiseaseNames={userDiseaseNames}
+            allergenGroups={myGroups}
+            availableAllergens={availableAllergens}
+            availableDiseases={availableDiseases}
             maxPrice={maxPrice}
             onMaxPrice={setMaxPrice}
             maxSugar={maxSugar}
@@ -571,7 +591,7 @@ const ProductPage: FC<ProductPageProps> = ({ onProductClick, initialCategory }) 
             {/* 결과 수 + 정렬 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
               <span style={{ fontSize: 13, color: '#6B7A6E' }}>
-                총 <strong style={{ color: '#0F1E12' }}>{filtered.length}</strong>개 상품
+                총 <strong style={{ color: '#0F1E12' }}>{sorted.length}</strong>개 상품
               </span>
               <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap' }}>
                 {SORT_OPTS.map((opt, i) => (
@@ -624,7 +644,7 @@ const ProductPage: FC<ProductPageProps> = ({ onProductClick, initialCategory }) 
               ))}
             </div>
 
-            {filtered.length === 0 && (
+            {sorted.length === 0 && (
               <div style={{ padding: '80px 20px', textAlign: 'center' }}>
                 <div style={{ fontSize: 40, marginBottom: 16 }}>🔍</div>
                 <div style={{ fontSize: 15, fontWeight: 600, color: '#3A4A3F' }}>검색 결과가 없습니다</div>
@@ -636,19 +656,19 @@ const ProductPage: FC<ProductPageProps> = ({ onProductClick, initialCategory }) 
             {totalPages > 1 && (
               <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginTop: 32 }}>
                 <button
-                  onClick={() => setCurPage(p => Math.max(1, p - 1))}
+                  onClick={() => { setCurPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); }}
                   disabled={curPage === 1}
                   style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #E5E7E1', background: '#fff', color: curPage === 1 ? '#C9CFC4' : '#3A4A3F', cursor: curPage === 1 ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontSize: 13 }}
                 >이전</button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
                   <button
                     key={n}
-                    onClick={() => setCurPage(n)}
+                    onClick={() => { setCurPage(n); window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); }}
                     style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid ' + (curPage === n ? '#1F4D2C' : '#E5E7E1'), background: curPage === n ? '#1F4D2C' : '#fff', color: curPage === n ? '#fff' : '#3A4A3F', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: curPage === n ? 700 : 500 }}
                   >{n}</button>
                 ))}
                 <button
-                  onClick={() => setCurPage(p => Math.min(totalPages, p + 1))}
+                  onClick={() => { setCurPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); }}
                   disabled={curPage === totalPages}
                   style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #E5E7E1', background: '#fff', color: curPage === totalPages ? '#C9CFC4' : '#3A4A3F', cursor: curPage === totalPages ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontSize: 13 }}
                 >다음</button>

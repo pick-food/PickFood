@@ -1,7 +1,10 @@
-import { useState, type FC } from "react";
+import { useState, useEffect, type FC } from "react";
 import { useAuth } from "../../auth/store/useAuth";
+import { useCart } from "../../cart/hooks/useCart";
+import { useLike } from "../../like/hooks/useLike";
+import type { Product } from "../../product/models/type";
 import {
-  PF_CURRENT_USER, PF_ORDERS, PF_WISHLIST,
+  PF_CURRENT_USER, PF_ORDERS,
   getPFActiveAllergenNames, getPFActiveDiseaseNames, getPFProductById,
   type PFOrder, type PFOrderStatus,
 } from "../../../data/pfData";
@@ -209,6 +212,242 @@ const OrdersContent: FC = () => {
   );
 };
 
+/* ── WishlistContent ────────────────────────────────────────── */
+const HeartFilledIco = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="#E53935">
+    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+  </svg>
+);
+
+interface WishlistContentProps {
+  onProductClick?: (product: Product) => void;
+}
+
+const WishlistContent: FC<WishlistContentProps> = ({ onProductClick }) => {
+  const { items, isLoading, toggleLike } = useLike();
+
+  if (isLoading) return (
+    <div style={{ padding: '60px 0', textAlign: 'center', color: '#9AA89D', fontSize: 14 }}>
+      찜 목록을 불러오는 중...
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0F1E12', margin: 0 }}>찜한 상품</h2>
+        <div style={{ fontSize: 13, color: '#9AA89D', marginTop: 4 }}>총 {items.length}개</div>
+      </div>
+
+      {items.length === 0 ? (
+        <div style={{ padding: '60px 0', background: '#FAFAFA', borderRadius: 12, border: '1px solid #F0F0F0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ marginBottom: 16 }}>
+            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="#D0D5CE" strokeWidth="1.5"/>
+          </svg>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#3A4A3F', marginBottom: 8 }}>찜한 상품이 없어요</div>
+          <div style={{ fontSize: 13, color: '#9AA89D' }}>
+            안전한 상품을 찾으면 <span style={{ color: '#E53935' }}>♥</span> 버튼으로 저장해 두세요.
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+          {items.map(item => {
+            const product: Product = {
+              id: item.product_id,
+              name: item.title,
+              brand: '',
+              price: 0,
+              originalPrice: 0,
+              discountRate: 0,
+              rating: 0,
+              reviewCount: 0,
+              badge: null,
+              badgeBg: '',
+              badgeColor: '',
+              imageSrc: '',
+            };
+            return (
+              <div
+                key={item.product_id}
+                onClick={() => onProductClick?.(product)}
+                style={{ background: '#fff', borderRadius: 12, border: '1px solid #F0F0F0', overflow: 'hidden', position: 'relative', cursor: onProductClick ? 'pointer' : 'default' }}
+              >
+                {/* 이미지 */}
+                <div style={{ position: 'relative', aspectRatio: '1/1', background: '#F4F5F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="#D0D5CE" strokeWidth="1.5"/>
+                  </svg>
+                  <button
+                    onClick={e => { e.stopPropagation(); toggleLike(item.product_id); }}
+                    style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 999, background: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }}
+                  >
+                    <HeartFilledIco />
+                  </button>
+                </div>
+                {/* 정보 */}
+                <div style={{ padding: '10px 12px 14px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#0F1E12', lineHeight: 1.4, marginBottom: 6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as React.CSSProperties}>
+                    {item.title}
+                  </div>
+                  {!item.is_available && (
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#E53935', marginTop: 4 }}>판매 종료</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ── CartContent ────────────────────────────────────────────── */
+const FREE_SHIPPING_AT = 43000;
+const SHIPPING_FEE     = 3000;
+
+const CartContent: FC = () => {
+  const {
+    groups, totalCount, isLoading, error,
+    allChecked, checkedItems,
+    toggleAll, toggleOne, setQuantity, removeOne, clearChecked,
+  } = useCart();
+
+  const productTotal = checkedItems.reduce((sum, i) => sum + i.option.price * i.quantity, 0);
+  const shipping     = productTotal > 0 && productTotal < FREE_SHIPPING_AT ? SHIPPING_FEE : 0;
+  const grandTotal   = productTotal + shipping;
+  const remaining    = FREE_SHIPPING_AT - productTotal;
+
+  if (isLoading) return (
+    <div style={{ padding: '60px 0', textAlign: 'center', color: '#9AA89D', fontSize: 14 }}>
+      장바구니를 불러오는 중...
+    </div>
+  );
+
+  if (error) return (
+    <div style={{ padding: '60px 0', textAlign: 'center', color: '#E57373', fontSize: 14 }}>
+      {error}
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0F1E12', margin: 0 }}>장바구니</h2>
+        <div style={{ fontSize: 13, color: '#9AA89D', marginTop: 4 }}>총 {totalCount}개</div>
+      </div>
+
+      {groups.length === 0 ? (
+        <div style={{ padding: '60px 0', background: '#FAFAFA', borderRadius: 12, border: '1px solid #F0F0F0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ marginBottom: 16 }}>
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="#D0D5CE" strokeWidth="1.5" strokeLinejoin="round"/>
+            <line x1="3" y1="6" x2="21" y2="6" stroke="#D0D5CE" strokeWidth="1.5"/>
+            <path d="M16 10a4 4 0 01-8 0" stroke="#D0D5CE" strokeWidth="1.5"/>
+          </svg>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#3A4A3F', marginBottom: 8 }}>장바구니가 비어 있어요</div>
+          <div style={{ fontSize: 13, color: '#9AA89D' }}>
+            상품 상세 페이지에서 '장바구니'를 눌러 담아 보세요.
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+
+          {/* 왼쪽: 상품 목록 */}
+          <div style={{ flex: 1 }}>
+            {/* 전체선택 헤더 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, padding: '10px 16px', background: '#fff', border: '1px solid #E5E7E1', borderRadius: 10 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#0F1E12' }}>
+                <input type="checkbox" checked={allChecked} onChange={toggleAll}
+                  style={{ width: 16, height: 16, accentColor: '#1F4D2C', cursor: 'pointer' }} />
+                전체선택 ( {checkedItems.length} )
+              </label>
+              <button onClick={clearChecked} style={{ background: 'transparent', border: '1px solid #E5E7E1', borderRadius: 6, padding: '5px 12px', fontSize: 12, color: '#6B7A6E', cursor: 'pointer', fontFamily: 'inherit' }}>
+                선택 비우기
+              </button>
+            </div>
+
+            {/* 판매자별 그룹 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {groups.map(group => (
+                <div key={group.seller.id} style={{ border: '1px solid #E5E7E1', borderRadius: 10, overflow: 'hidden' }}>
+                  <div style={{ padding: '10px 16px', background: '#F8FAF8', borderBottom: '1px solid #E5E7E1', fontSize: 12, fontWeight: 700, color: '#3A4A3F' }}>
+                    {group.seller.business_name}
+                  </div>
+                  {group.items.map((item, idx) => (
+                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderTop: idx > 0 ? '1px solid #F4F5F1' : 'none', background: '#fff' }}>
+                      <input type="checkbox" checked={item.checked} onChange={() => toggleOne(item.id)}
+                        style={{ width: 16, height: 16, accentColor: '#1F4D2C', cursor: 'pointer', flexShrink: 0 }} />
+                      <div style={{ width: 60, height: 60, borderRadius: 8, flexShrink: 0, background: '#F4F5F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="#C9CFC4" strokeWidth="1.5" strokeLinejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke="#C9CFC4" strokeWidth="1.5"/><path d="M16 10a4 4 0 01-8 0" stroke="#C9CFC4" strokeWidth="1.5"/></svg>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#0F1E12', lineHeight: 1.4 }}>{item.product.title}</div>
+                        <div style={{ fontSize: 12, color: '#9AA89D', marginTop: 2 }}>{item.option.name}</div>
+                        <div style={{ fontSize: 12, color: '#9AA89D', marginTop: 1 }}>{item.option.price.toLocaleString()}원 · 1개당</div>
+                      </div>
+
+                      {/* 수량 조절 */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 0, border: '1px solid #E5E7E1', borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
+                        <button onClick={() => setQuantity(item.id, item.quantity - 1)}
+                          style={{ width: 32, height: 32, border: 'none', background: '#F4F5F1', cursor: 'pointer', fontSize: 16, color: '#3A4A3F', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                        <span style={{ width: 32, textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#0F1E12' }}>{item.quantity}</span>
+                        <button onClick={() => setQuantity(item.id, item.quantity + 1)}
+                          style={{ width: 32, height: 32, border: 'none', background: '#F4F5F1', cursor: 'pointer', fontSize: 16, color: '#3A4A3F', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                      </div>
+
+                      {/* 금액 */}
+                      <div style={{ fontSize: 15, fontWeight: 800, color: '#0F1E12', flexShrink: 0, minWidth: 80, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                        {(item.option.price * item.quantity).toLocaleString()}원
+                      </div>
+
+                      {/* 삭제 */}
+                      <button onClick={() => removeOne(item.id)}
+                        style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', color: '#C9CFC4', padding: 4, display: 'flex', alignItems: 'center' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6M9 6V4h6v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 오른쪽: 결제 요약 */}
+          <div style={{ width: 280, flexShrink: 0, background: '#fff', border: '1px solid #E5E7E1', borderRadius: 12, padding: '20px', position: 'sticky', top: 24 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#0F1E12', marginBottom: 18 }}>결제 요약</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+              {[
+                { label: '상품금액', value: productTotal.toLocaleString() + '원', color: '#0F1E12' },
+                { label: '배송비',   value: shipping === 0 ? '무료' : shipping.toLocaleString() + '원', color: shipping === 0 ? '#1F6B45' : '#0F1E12' },
+                { label: '포인트',   value: '0P', color: '#F59E0B' },
+              ].map(r => (
+                <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                  <span style={{ color: '#6B7A6E' }}>{r.label}</span>
+                  <span style={{ fontWeight: 600, color: r.color }}>{r.value}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ borderTop: '1px solid #F0F0F0', paddingTop: 16, marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#0F1E12' }}>총 결제금액</span>
+                <span style={{ fontSize: 18, fontWeight: 900, color: '#0F1E12', fontVariantNumeric: 'tabular-nums' }}>{grandTotal.toLocaleString()}원</span>
+              </div>
+            </div>
+            {remaining > 0 && (
+              <div style={{ background: '#FFF8E1', borderRadius: 8, padding: '10px 12px', marginBottom: 14, fontSize: 12, color: '#B97308' }}>
+                ⓘ {remaining.toLocaleString()}원 더 담으면 무료배송
+              </div>
+            )}
+            <button style={{ width: '100%', padding: '14px', background: '#0F1E12', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
+              {grandTotal.toLocaleString()}원 주문하기
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ── SimpleContent (placeholder) ───────────────────────────── */
 const PlaceholderContent: FC<{ title: string }> = ({ title }) => (
   <div style={{ padding: '60px 0', textAlign: 'center' }}>
@@ -221,28 +460,35 @@ const PlaceholderContent: FC<{ title: string }> = ({ title }) => (
 /* ── MyPage ─────────────────────────────────────────────────── */
 interface MyPageProps {
   onBack?: () => void;
+  initialTab?: TabId;
+  onProductClick?: (product: Product) => void;
 }
 
 const MENU: { id: TabId; label: string; icon: FC; badge?: number }[] = [
   { id: 'orders',        label: '주문/배송',  icon: ShipIco,   badge: PF_ORDERS.filter(o => o.status === 'shipping' || o.status === 'preparing').length },
   { id: 'cart',          label: '장바구니',   icon: CartIco   },
-  { id: 'wishlist',      label: '찜한 상품',  icon: HeartIco,  badge: PF_WISHLIST.length },
+  { id: 'wishlist',      label: '찜한 상품',  icon: HeartIco },
   { id: 'safety',        label: '안전 프로필', icon: ShieldIco  },
   { id: 'address',       label: '배송지',     icon: MapPinIco  },
   { id: 'profile',       label: '회원 정보',  icon: UserIco    },
   { id: 'notifications', label: '알림 설정',  icon: BellIco    },
 ];
 
-const MyPage: FC<MyPageProps> = ({ onBack }) => {
+const MyPage: FC<MyPageProps> = ({ onBack, initialTab, onProductClick }) => {
   const { user } = useAuth();
-  const [activeMenu, setActiveMenu] = useState<TabId>('orders');
+  const { items: likedItems } = useLike();
+  const [activeMenu, setActiveMenu] = useState<TabId>(initialTab ?? 'orders');
+
+  useEffect(() => {
+    if (initialTab) setActiveMenu(initialTab);
+  }, [initialTab]);
 
   const displayName   = user?.name ?? PF_CURRENT_USER.name;
   const allergenNames = getPFActiveAllergenNames();
   const diseaseNames  = getPFActiveDiseaseNames();
 
-  const shippingCount = PF_ORDERS.filter(o => o.status === 'shipping').length;
-  const wishlistCount = PF_WISHLIST.length;
+  const shippingCount  = PF_ORDERS.filter(o => o.status === 'shipping').length;
+  const wishlistCount  = likedItems.length;
 
   return (
     <div style={{ background: '#F4F5F1', minHeight: '100vh', paddingBottom: 80 }}>
@@ -364,8 +610,8 @@ const MyPage: FC<MyPageProps> = ({ onBack }) => {
         {/* Content */}
         <div style={{ flex: 1, background: '#fff', borderRadius: 12, border: '1px solid #E5E7E1', padding: '28px 32px', minHeight: 400 }}>
           {activeMenu === 'orders'        && <OrdersContent />}
-          {activeMenu === 'cart'          && <PlaceholderContent title="장바구니" />}
-          {activeMenu === 'wishlist'      && <PlaceholderContent title="찜한 상품" />}
+          {activeMenu === 'cart'          && <CartContent />}
+          {activeMenu === 'wishlist'      && <WishlistContent onProductClick={onProductClick} />}
           {activeMenu === 'safety'        && <PlaceholderContent title="안전 프로필" />}
           {activeMenu === 'address'       && <PlaceholderContent title="배송지 관리" />}
           {activeMenu === 'profile'       && <PlaceholderContent title="회원 정보" />}

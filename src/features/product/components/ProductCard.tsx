@@ -4,17 +4,13 @@ import type { Product } from "../models/type";
 import Toast    from "../../../shared/components/Toast";
 import { useToast } from "../hooks/useToast";
 import { useAuth } from "../../auth/store/useAuth";
+import { useMyAllergenSummary } from "../../allergen/hooks/useMyAllergenSummary";
+import { likeProduct, unlikeProduct } from "../../like/services/likeApi";
+import { addLocalLike, removeLocalLike, isLocallyLiked } from "../../like/store/likeLocalStore";
+import { addCartItems } from "../../cart/services/cartApi";
 
-// Mock allergens per product (keyed by product id) — replace with real API data when available
-const PRODUCT_ALLERGENS: Record<string, string[]> = {
-  "1": [],
-  "2": ["대두"],
-  "3": ["밀"],
-  "4": ["우유"],
-  "5": ["대두"],
-};
-// User's active allergen profile (replace with auth store data when available)
-const USER_ACTIVE_ALLERGENS: string[] = [];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUUID = (id: string) => UUID_RE.test(id);
 
 interface ProductCardProps {
   product: Product;
@@ -55,35 +51,67 @@ const BADGE_STYLE: Record<string, { bg: string; color: string }> = {
   recommended: { bg: '#0F1E12', color: '#A8E063' },
 };
 
-const CartIco = () => (
+const CartIco: FC<{ filled: boolean }> = ({ filled }) => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-    <path d="M16 10a4 4 0 01-8 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke={filled ? '#fff' : '#3A4A3F'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <line x1="3" y1="6" x2="21" y2="6" stroke={filled ? '#fff' : '#3A4A3F'} strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M16 10a4 4 0 01-8 0" stroke={filled ? '#fff' : '#3A4A3F'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
 const ProductCard: FC<ProductCardProps> = ({ product, onClick, allergyHits: hitsProp }) => {
   const { brand, name, price, originalPrice, discountRate, rating, reviewCount, badge, imageSrc } = product;
   const { isLoggedIn } = useAuth();
-  const [isHearted, setIsHearted] = useState(false);
+  const { allergenNames, diseaseNames } = useMyAllergenSummary();
+  const [isHearted, setIsHearted] = useState(() => isLocallyLiked(product.id));
+  const [isCarted,  setIsCarted]  = useState(false);
   const [burst,     setBurst]     = useState(false);
   const { toast, showToast } = useToast();
 
   const badgeStyle = (badge ? BADGE_STYLE[badge] : undefined) ?? BADGE_STYLE.BEST;
   const discount   = discountRate > 0 ? discountRate : (originalPrice > price ? Math.round((1 - price / originalPrice) * 100) : 0);
 
-  // Allergy warning: use prop if provided, otherwise derive from mock data
-  const hits = hitsProp ?? (PRODUCT_ALLERGENS[product.id] ?? []).filter(a => USER_ACTIVE_ALLERGENS.includes(a));
-  const isDanger = hits.length > 0;
+  const hits = hitsProp ?? (
+    allergenNames.length > 0
+      ? (product.allergens ?? []).filter(a => allergenNames.includes(a))
+      : []
+  );
+  const hasDiseaseRisk = diseaseNames.length > 0
+    ? (product.riskDiseases ?? []).some(d => diseaseNames.includes(d))
+    : false;
+  const isDanger = hits.length > 0 || hasDiseaseRisk;
 
-  function handleHeart(e: React.MouseEvent) {
+  async function handleHeart(e: React.MouseEvent) {
     e.stopPropagation();
     setBurst(true);
     setTimeout(() => setBurst(false), 400);
     const next = !isHearted;
     setIsHearted(next);
     showToast(next ? "heart" : "heartCancel");
+    if (next) {
+      addLocalLike({
+        product_id: product.id,
+        title: product.name,
+        thumbnail_file_id: '',
+        is_available: true,
+        liked_at: new Date().toISOString(),
+      });
+      if (isUUID(product.id)) likeProduct(product.id).catch(() => {});
+    } else {
+      removeLocalLike(product.id);
+      if (isUUID(product.id)) unlikeProduct(product.id).catch(() => {});
+    }
+  }
+
+  async function handleCart(e: React.MouseEvent) {
+    e.stopPropagation();
+    const next = !isCarted;
+    setIsCarted(next);
+    showToast(next ? "cart" : "cartCancel");
+    if (!next || !isUUID(product.id)) return;
+    try {
+      await addCartItems([{ option_id: product.id, quantity: 1 }]);
+    } catch { /* 무시 */ }
   }
 
   return (
@@ -137,17 +165,17 @@ const ProductCard: FC<ProductCardProps> = ({ product, onClick, allergyHits: hits
           {/* 장바구니 버튼 (로그인 시, 이미지 오버레이) */}
           {isLoggedIn && (
             <button
-              onClick={e => { e.stopPropagation(); showToast('cart'); }}
+              onClick={handleCart}
               style={{
                 position: 'absolute', top: 8, right: 48,
                 width: 32, height: 32, borderRadius: 999, border: 'none',
-                background: 'rgba(255,255,255,0.92)',
+                background: isCarted ? '#1F4D2C' : 'rgba(255,255,255,0.92)',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 backdropFilter: 'blur(8px)', transition: 'background 200ms',
               }}
               aria-label="장바구니"
             >
-              <CartIco />
+              <CartIco filled={isCarted} />
             </button>
           )}
 
@@ -219,7 +247,10 @@ const ProductCard: FC<ProductCardProps> = ({ product, onClick, allergyHits: hits
         </div>
       </div>
 
-      <Toast toast={toast} onNavigate={() => {}} />
+      <Toast toast={toast} onNavigate={type => {
+        const tab = type === 'heart' ? 'wishlist' : 'cart';
+        window.dispatchEvent(new CustomEvent("pickfood:navigate", { detail: { tab } }));
+      }} />
     </>
   );
 };

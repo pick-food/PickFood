@@ -15,7 +15,7 @@ const SocialDot = ({ label }: { label: string }) => (
 
 export function Footer() {
   return (
-    <footer style={{ background: '#0F1E12', color: '#fff', marginTop: 80 }}>
+    <footer style={{ background: '#0F1E12', color: '#fff' }}>
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 40px 32px' }}>
 
         {/* 5열 그리드 */}
@@ -58,8 +58,8 @@ export function Footer() {
         {/* 하단 */}
         <div style={{ borderTop: '1px solid #2A3A2F', paddingTop: 24, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ fontSize: 11, color: '#6B8070', lineHeight: 1.8 }}>
-            (주)픽푸드  ·  대표 박지수  ·  사업자등록번호 123-45-67890  ·  통신판매업신고 2026-서울강남-01234<br />
-            서울특별시 강남구 테헤란로 123, 픽푸드빌딩 8층  ·  고객센터 1588-0000 (평일 09:00~18:00)<br />
+            (주)픽푸  ·  대표 박희은  ·  사업자등록번호 123-45-67890  ·  통신판매업신고 2026-서울강남-01234<br />
+            서울특별시 강남구 테헤란로 123, 픽푸빌딩 8층  ·  고객센터 1588-0000 (평일 09:00~18:00)<br />
             © 2026 pickfood Inc. All rights reserved.
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>

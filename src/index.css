@@ -3,3 +3,17 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes pfBarFill {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+@keyframes pfFadeSlide {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.pf-hero-text-enter {
+  animation: pfFadeSlide 0.45s ease forwards;
+}
