@@ -80,6 +80,7 @@ export interface AuthUser {
   name: string;
   nickname: string;
   role: string;
+  created_at?: string;
 }
 
 export interface AuthTokens {

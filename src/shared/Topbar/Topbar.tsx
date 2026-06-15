@@ -212,8 +212,7 @@ export function TopBar({
                 }}
               >검색</button>
             </div>
-            {q.length === 0 && (
-              <div style={{ display: 'flex', gap: 6, marginTop: 8, paddingLeft: 4, alignItems: 'center', fontSize: 11 }}>
+            <div style={{ display: 'flex', gap: 6, marginTop: 8, paddingLeft: 4, alignItems: 'center', fontSize: 11 }}>
                 <span style={{ color: '#9AA89D', fontWeight: 600 }}>인기 검색</span>
                 {TRENDING.map((k, i) => (
                   <a key={k} style={{ cursor: 'pointer', color: '#3A4A3F', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
@@ -221,8 +220,7 @@ export function TopBar({
                     {k}
                   </a>
                 ))}
-              </div>
-            )}
+            </div>
           </div>
 
           {/* 액션 아이콘들 */}

@@ -26,6 +26,7 @@ export function useProductDetail(product: Product, initialIsHearted = false) {
         product_id: product.id,
         title: product.name,
         thumbnail_file_id: '',
+        image_url: product.imageSrc,
         is_available: true,
         liked_at: new Date().toISOString(),
       });

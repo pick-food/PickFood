@@ -35,11 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState(s => ({
           ...s,
           user: {
-            id:       profile.id,
-            email:    profile.email,
-            name:     profile.name,
-            nickname: profile.nickname,
-            role:     profile.role,
+            id:         profile.id,
+            email:      profile.email,
+            name:       profile.name,
+            nickname:   profile.nickname,
+            role:       profile.role,
+            created_at: profile.created_at,
           },
         }));
       })

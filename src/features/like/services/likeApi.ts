@@ -8,6 +8,7 @@ export interface LikeItem {
   thumbnail_file_id: string;
   is_available: boolean;
   liked_at: string;
+  image_url?: string;   // 로컬 저장용 (API에는 없는 필드)
 }
 
 interface LikesData {
