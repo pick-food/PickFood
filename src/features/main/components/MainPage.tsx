@@ -250,12 +250,12 @@ const ProductGrid: FC<{ products: Product[]; onProductClick?: (p: Product) => vo
 
 /* ── Brand Showcase ─────────────────────────────────────────── */
 const FEATURED_BRANDS = [
-  { name: '풀무원',  tag: '유기농 전문',    pid: 'p1'  },
-  { name: '오아시스', tag: '신선 수산물',   pid: 'p9'  },
-  { name: '하림',    tag: '동물복지 인증',  pid: 'p13' },
-  { name: '매일유업', tag: '저당·락토프리', pid: 'p4'  },
-  { name: 'pickfood', tag: 'PB 안심 라인', pid: 'p5'  },
-  { name: '제주랜드', tag: '제주 직배송',   pid: 'p8'  },
+  { name: '풀무원',  tag: '유기농 전문',    pid: 'p1',  color: '#1F6B3D' },
+  { name: '오아시스', tag: '신선 수산물',   pid: 'p9',  color: '#1A4E8A' },
+  { name: '하림',    tag: '동물복지 인증',  pid: 'p13', color: '#8A6A1E' },
+  { name: '매일유업', tag: '저당·락토프리', pid: 'p4',  color: '#C2477D' },
+  { name: 'pickfood', tag: 'PB 안심 라인', pid: 'p5',  color: '#151515' },
+  { name: '제주랜드', tag: '제주 직배송',   pid: 'p8',  color: '#6B3A2A' },
 ];
 
 const BrandShowcase: FC<{ products: Product[] }> = ({ products }) => (
@@ -268,10 +268,10 @@ const BrandShowcase: FC<{ products: Product[] }> = ({ products }) => (
             <img src={p.imageSrc} alt={b.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           )}
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg, rgba(0,0,0,0.68) 0%, rgba(0,0,0,0.10) 55%, transparent 100%)' }} />
-          <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12 }}>
+          <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(0deg, ${b.color} 0%, ${b.color}CC 35%, ${b.color}00 100%)` }} />
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '14px 12px 12px' }}>
             <div style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>{b.name}</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.72)', marginTop: 2 }}>{b.tag}</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>{b.tag}</div>
           </div>
         </div>
       );

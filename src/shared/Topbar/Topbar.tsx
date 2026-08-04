@@ -19,6 +19,7 @@ interface TopBarProps {
   isLoggedIn:      boolean;
   activeNavTab:    string | null;
   onNavTabChange:  (id: string) => void;
+  onLogoClick?:    () => void;
 }
 
 /* ── 알림 · 장바구니 뱃지 ──────────────────────────────── */
@@ -80,6 +81,7 @@ export function TopBar({
   isLoggedIn,
   activeNavTab,
   onNavTabChange,
+  onLogoClick,
 }: TopBarProps) {
   const { logout, user } = useAuth();
   const { allergenNames, diseaseNames } = useMyAllergenSummary();
@@ -136,7 +138,7 @@ export function TopBar({
           display: 'flex', alignItems: 'center', gap: 28,
         }}>
           {/* 로고 */}
-          <a onClick={() => onNavTabChange('all')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <a onClick={() => (onLogoClick ? onLogoClick() : onNavTabChange('all'))} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <img src={logo} alt="PickFood" style={{ height: 38, width: 'auto' }} />
           </a>
 

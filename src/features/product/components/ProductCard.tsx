@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Product } from "../models/type";
 import Toast    from "../../../shared/components/Toast";
 import { useToast } from "../hooks/useToast";
@@ -63,10 +63,14 @@ const ProductCard: FC<ProductCardProps> = ({ product, onClick, allergyHits: hits
   const { brand, name, price, originalPrice, discountRate, rating, reviewCount, badge, imageSrc } = product;
   const { isLoggedIn } = useAuth();
   const { allergenNames, diseaseNames } = useMyAllergenSummary();
-  const [isHearted, setIsHearted] = useState(() => isLocallyLiked(product.id));
+  const [isHearted, setIsHearted] = useState(() => isLoggedIn && isLocallyLiked(product.id));
   const [isCarted,  setIsCarted]  = useState(false);
   const [burst,     setBurst]     = useState(false);
   const { toast, showToast } = useToast();
+
+  useEffect(() => {
+    setIsHearted(isLoggedIn && isLocallyLiked(product.id));
+  }, [isLoggedIn, product.id]);
 
   const badgeStyle = (badge ? BADGE_STYLE[badge] : undefined) ?? BADGE_STYLE.BEST;
   const discount   = discountRate > 0 ? discountRate : (originalPrice > price ? Math.round((1 - price / originalPrice) * 100) : 0);

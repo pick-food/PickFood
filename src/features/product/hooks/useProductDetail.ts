@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Product } from "../models/type";
+import { useAuth } from "../../auth/store/useAuth";
 import { addCartItems } from "../../cart/services/cartApi";
 import { likeProduct, unlikeProduct } from "../../like/services/likeApi";
 import { addLocalLike, removeLocalLike, isLocallyLiked } from "../../like/store/likeLocalStore";
@@ -8,10 +9,15 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const isUUID = (id: string) => UUID_RE.test(id);
 
 export function useProductDetail(product: Product, initialIsHearted = false) {
+  const { isLoggedIn } = useAuth();
   const [quantity,  setQuantity]  = useState(1);
-  const [isHearted, setIsHearted] = useState(() => isLocallyLiked(product.id) || initialIsHearted);
+  const [isHearted, setIsHearted] = useState(() => isLoggedIn && (isLocallyLiked(product.id) || initialIsHearted));
   const [isCarted,  setIsCarted]  = useState(false);
   const [activeTab, setActiveTab] = useState<"desc" | "detail" | "review" | "qna">("desc");
+
+  useEffect(() => {
+    setIsHearted(isLoggedIn && isLocallyLiked(product.id));
+  }, [isLoggedIn, product.id]);
 
   const totalPrice = product.price * quantity;
 

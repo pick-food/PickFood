@@ -1,30 +1,7 @@
 import { useState, useEffect } from "react";
 import { getAllergens } from "../services/allergenApi";
 import type { Allergen } from "../services/allergenApi";
-
-// 서버 응답에 emoji가 없으므로 이름으로 매핑
-const EMOJI_MAP: Record<string, string> = {
-  '난류':     '🥚', '계란': '🥚',
-  '우유':     '🥛',
-  '메밀':     '🌾',
-  '땅콩':     '🥜',
-  '대두':     '🫘',
-  '밀':       '🌾',
-  '고등어':   '🐟',
-  '게':       '🦀',
-  '새우':     '🦐',
-  '돼지고기': '🐷',
-  '복숭아':   '🍑',
-  '토마토':   '🍅',
-  '아황산류': '⚗️',
-  '호두':     '🌰',
-  '닭고기':   '🍗',
-  '쇠고기':   '🥩',
-  '오징어':   '🦑',
-  '조개류':   '🦪',
-  '잣':       '🌰',
-  '참깨':     '🌿',
-};
+import { ALLERGEN_EMOJI as EMOJI_MAP } from "../constants/legalAllergens";
 
 export interface AllergenWithEmoji extends Allergen {
   emoji: string;

@@ -2,8 +2,8 @@ import type { FC } from "react";
 import { useState } from "react";
 import { useSignup } from "../hooks/useSignup";
 import TermsModel from "./TermsModel";
-import { useAllergens } from "../../allergen/hooks/useAllergens";
-import { createAllergenGroup } from "../../allergen/services/allergenApi";
+import { LEGAL_ALLERGENS } from "../../allergen/constants/legalAllergens";
+import { getAllergens, createAllergenGroup } from "../../allergen/services/allergenApi";
 
 const DISEASES = [
   { id: 'diabetes',       name: '당뇨',       emoji: '💉', desc: '당류·고GI 식품 회피' },
@@ -69,9 +69,6 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
   const [activeDiseaseIdx, setActiveDiseaseIdx] = useState(0);
   const [showTerms, setShowTerms] = useState(false);
 
-  // GET /allergens — 알레르기 유발물질 목록 로드
-  const { allergens: apiAllergens, loading: allergensLoading, error: allergensError, refetch: refetchAllergens } = useAllergens();
-
   // useSignup에 onComplete 래퍼 전달:
   // 회원가입 성공 → POST /allergen-groups 저장 → 부모 onComplete 호출
   // useSignup이 내부에서 onCompleteRef.current를 사용하므로 매 렌더마다 최신 allergyGroups 반영
@@ -93,13 +90,26 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
     loading, error,
     handleSubmit,
   } = useSignup(async () => {
-    // POST /allergen-groups: 알레르기가 하나라도 있는 그룹만 저장 (실패해도 블로킹하지 않음)
+    // 회원가입 완료(=토큰 발급) 후에만 GET /allergens 가 인증되므로, 여기서 선택된
+    // 알레르기 "이름"을 실제 백엔드 allergen id로 변환한 뒤 그룹을 저장한다.
     const groupsWithAllergens = allergyGroups.filter(g => g.allergens.length > 0);
-    await Promise.allSettled(
-      groupsWithAllergens.map(g =>
-        createAllergenGroup({ name: g.name, allergen_ids: g.allergens })
-      )
-    );
+    if (groupsWithAllergens.length > 0) {
+      const idByName = new Map<string, string>();
+      try {
+        const serverAllergens = await getAllergens();
+        for (const a of serverAllergens) idByName.set(a.name, a.id);
+      } catch {
+        // 매핑 실패 시 그룹 저장은 건너뛴다 (회원가입 자체는 막지 않음)
+      }
+      await Promise.allSettled(
+        groupsWithAllergens.map(g => {
+          const allergenIds = g.allergens.map(name => idByName.get(name)).filter((id): id is string => !!id);
+          return allergenIds.length > 0
+            ? createAllergenGroup({ name: g.name, allergen_ids: allergenIds })
+            : Promise.resolve();
+        })
+      );
+    }
     onComplete?.();
   });
 
@@ -275,7 +285,7 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
             {showTerms && (
               <TermsModel onClose={() => setShowTerms(false)} onAgree={() => { setTermsAgreed(true); setShowTerms(false); }} />
             )}
-            {error && <p style={{ fontSize: 12, color: '#D32F2F', textAlign: 'center', marginTop: 12 }}>{error}</p>}
+            {error && <p style={{ fontSize: 12, color: '#D32F2F', textAlign: 'center', marginTop: 12, whiteSpace: 'pre-line' }}>{error}</p>}
 
             <div style={{ marginTop: 32, display: 'flex', justifyContent: 'flex-end' }}>
               <NextBtn
@@ -345,39 +355,28 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
               </Field>
               <div style={{ marginTop: 20 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#3A4A3F', marginBottom: 10 }}>알레르기 식재료 (복수 선택)</div>
-                {allergensLoading ? (
-                  <div style={{ fontSize: 13, color: '#9AA89D', textAlign: 'center', padding: 16 }}>불러오는 중…</div>
-                ) : allergensError ? (
-                  <div style={{ textAlign: 'center', padding: 16 }}>
-                    <p style={{ fontSize: 13, color: '#D32F2F', marginBottom: 8 }}>{allergensError}</p>
-                    <button type="button" onClick={refetchAllergens} style={{ fontFamily: 'inherit', fontSize: 12, fontWeight: 600, padding: '7px 16px', border: '1px solid #C9CFC4', borderRadius: 8, background: '#fff', color: '#3A4A3F', cursor: 'pointer' }}>
-                      다시 시도
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
-                    {apiAllergens.map(a => {
-                      const sel = allergyGroups[activeAllergyIdx].allergens.includes(a.id);
-                      return (
-                        <button key={a.id} onClick={() => {
-                          const g = [...allergyGroups];
-                          const arr = g[activeAllergyIdx].allergens;
-                          g[activeAllergyIdx] = { ...g[activeAllergyIdx], allergens: sel ? arr.filter(x => x !== a.id) : [...arr, a.id] };
-                          setAllergyGroups(g);
-                        }} style={{
-                          padding: '10px 4px', fontFamily: 'inherit',
-                          border: '1.5px solid', borderColor: sel ? '#D32F2F' : '#E5E7E1',
-                          background: sel ? '#FEF2F2' : '#fff',
-                          borderRadius: 10, cursor: 'pointer',
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                        }}>
-                          <span style={{ fontSize: 20 }}>{a.emoji}</span>
-                          <div style={{ fontSize: 11, fontWeight: sel ? 700 : 500, color: sel ? '#B71C1C' : '#3A4A3F', textAlign: 'center' }}>{a.name}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+                  {LEGAL_ALLERGENS.map(a => {
+                    const sel = allergyGroups[activeAllergyIdx].allergens.includes(a.name);
+                    return (
+                      <button key={a.name} onClick={() => {
+                        const g = [...allergyGroups];
+                        const arr = g[activeAllergyIdx].allergens;
+                        g[activeAllergyIdx] = { ...g[activeAllergyIdx], allergens: sel ? arr.filter(x => x !== a.name) : [...arr, a.name] };
+                        setAllergyGroups(g);
+                      }} style={{
+                        padding: '10px 4px', fontFamily: 'inherit',
+                        border: '1.5px solid', borderColor: sel ? '#D32F2F' : '#E5E7E1',
+                        background: sel ? '#FEF2F2' : '#fff',
+                        borderRadius: 10, cursor: 'pointer',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                      }}>
+                        <span style={{ fontSize: 20 }}>{a.emoji}</span>
+                        <div style={{ fontSize: 11, fontWeight: sel ? 700 : 500, color: sel ? '#B71C1C' : '#3A4A3F', textAlign: 'center' }}>{a.name}</div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -508,11 +507,11 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                       {g.allergens.length === 0
                         ? <span style={{ fontSize: 12, color: '#9AA89D' }}>등록된 알레르기 없음</span>
-                        : g.allergens.map(aid => {
-                            const a = apiAllergens.find(x => x.id === aid);
+                        : g.allergens.map(allergenName => {
+                            const a = LEGAL_ALLERGENS.find(x => x.name === allergenName);
                             if (!a) return null;
                             return (
-                              <span key={aid} style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', background: '#FEF2F2', color: '#B71C1C', borderRadius: 999 }}>
+                              <span key={allergenName} style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', background: '#FEF2F2', color: '#B71C1C', borderRadius: 999 }}>
                                 {a.emoji} {a.name}
                               </span>
                             );
@@ -547,7 +546,7 @@ const SignupPage: FC<SignupPageProps> = ({ onBack: _onBack, onComplete }) => {
               </div>
             </div>
 
-            {error && <p style={{ fontSize: 12, color: '#D32F2F', textAlign: 'center', marginTop: 12 }}>{error}</p>}
+            {error && <p style={{ fontSize: 12, color: '#D32F2F', textAlign: 'center', marginTop: 12, whiteSpace: 'pre-line' }}>{error}</p>}
 
             <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between' }}>
               <PrevBtn onClick={() => setStep(3)} />

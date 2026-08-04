@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, createContext, useContext } from "rea
 import type { ReactNode } from "react";
 import type { AuthUser } from "../services/authApi";
 import { getMyProfile, logout as logoutApi } from "../services/authApi";
+import { getLocalDisplayName } from "../utils/displayName";
 
 interface AuthState {
   isLoggedIn: boolean;
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           user: {
             id:         profile.id,
             email:      profile.email,
-            name:       profile.name,
+            name:       getLocalDisplayName(profile.id) ?? profile.name,
             nickname:   profile.nickname,
             role:       profile.role,
             created_at: profile.created_at,
@@ -56,7 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (tokens: { access_token: string; refresh_token: string; user: AuthUser }) => {
       localStorage.setItem("access_token",  tokens.access_token);
       localStorage.setItem("refresh_token", tokens.refresh_token);
-      setState({ isLoggedIn: true, user: tokens.user, accessToken: tokens.access_token });
+      const localName = getLocalDisplayName(tokens.user.id);
+      const user = localName ? { ...tokens.user, name: localName } : tokens.user;
+      setState({ isLoggedIn: true, user, accessToken: tokens.access_token });
     },
     []
   );

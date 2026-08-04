@@ -14,15 +14,17 @@ import MyPage             from "./features/mypage/components/MyPage";
 import { useAuth }        from "./features/auth/store/useAuth";
 import type { Product }   from "./features/product/models/type";
 import Chatbot            from "./features/chat/components/Chatbot";
+import ChatPage           from "./features/chat/components/ChatPage";
 import LoginRequired     from "./shared/components/LoginRequired";
 
-type Page    = "main" | "login" | "signup" | "signupComplete" | "findId" | "findPassword" | "product" | "mypage" | "recipe" | "loginRequired";
+type Page    = "main" | "login" | "signup" | "signupComplete" | "findId" | "findPassword" | "product" | "mypage" | "recipe" | "loginRequired" | "chat";
 type MyTab   = "orders" | "cart" | "wishlist" | "safety" | "address" | "profile" | "notifications";
 
 const PAGE_TO_TAB: Partial<Record<Page, string>> = {
   main:    "all",
   product: "product",
   recipe:  "recipe",
+  chat:    "ai",
 };
 
 function AppInner() {
@@ -64,7 +66,7 @@ function AppInner() {
   }
 
   const NAV_TO_CAT: Record<string, string> = {
-    product: 'protein',
+    all: 'all', product: 'protein',
     meat: 'protein', fruit: 'fruit', vegetable: 'veg',
     dairy: 'dairy', staple: 'staple', frozen: 'ready',
     snack: 'snack', baby: 'baby', health: 'health',
@@ -72,11 +74,9 @@ function AppInner() {
 
   function handleNavTabChange(id: string) {
     setActiveNavTab(id);
-    if (id === "all") {
-      goTo("main");
-    } else if (id === "ai") {
+    if (id === "ai") {
       if (!isLoggedIn) { goTo("loginRequired"); return; }
-      window.dispatchEvent(new CustomEvent("pickfood:openchat"));
+      goTo("chat");
     } else if (id === "recipe") {
       if (!isLoggedIn) { goTo("loginRequired"); return; }
       goTo("recipe");
@@ -96,8 +96,13 @@ function AppInner() {
     setSelectedProduct(product);
   }
 
+  const isChat = page === "chat" && !selectedProduct;
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ position: 'relative', background: '#fff' }}>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ position: 'relative', background: '#fff', ...(isChat ? { height: '100vh' } : {}) }}
+    >
       <TopBar
         onLogin={() => goTo("login")}
         onSignup={() => goTo("signup")}
@@ -109,8 +114,9 @@ function AppInner() {
         isLoggedIn={isLoggedIn}
         activeNavTab={activeNavTab}
         onNavTabChange={handleNavTabChange}
+        onLogoClick={() => { setActiveNavTab("all"); goTo("main"); }}
       />
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col" style={isChat ? { minHeight: 0 } : undefined}>
         {selectedProduct ? (
           <>
             <ProductDetailPage
@@ -120,7 +126,7 @@ function AppInner() {
             <Footer />
           </>
         ) : (
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col" style={isChat ? { minHeight: 0 } : undefined}>
             {page === "main"           && <MainPage onProductClick={handleProductClick} onGoToProduct={(cat) => { setSelectedCategory(cat); goTo("product"); }} />}
             {page === "login"          && (
               <LoginPage
@@ -161,10 +167,13 @@ function AppInner() {
             {page === "mypage"         && (
               <MyPage onBack={() => goTo("main")} initialTab={myPageTab} onProductClick={handleProductClick} />
             )}
+            {page === "chat"           && (
+              <ChatPage onBack={() => goTo("main")} onManageFilter={() => goToMyPage("safety")} />
+            )}
             {page === "loginRequired"  && (
               <LoginRequired onLogin={() => goTo("login")} />
             )}
-            <Footer />
+            {page !== "chat" && <Footer />}
           </div>
         )}
       </main>

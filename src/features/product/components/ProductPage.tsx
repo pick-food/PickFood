@@ -12,6 +12,7 @@ interface ProductPageProps {
 }
 
 const CAT_NAMES: Record<string, string> = {
+  all: '전체',
   protein: '정육·수산', fruit: '과일', veg: '채소',
   dairy: '유제품·음료', staple: '주식·간편식', ready: '냉동·즉석',
   snack: '간식·과자', baby: '베이비푸드', health: '건강기능식품',
@@ -49,6 +50,9 @@ const SearchIco = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="no
 const XIcon     = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>;
 const ShieldIco = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2L4 6v6c0 5.5 3.5 10.7 8 12 4.5-1.3 8-6.5 8-12V6L12 2z" stroke="#1F4D2C" strokeWidth="1.8" strokeLinejoin="round"/><path d="M9 12l2 2 4-4" stroke="#1F4D2C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 const ChevIco   = ({ open }: { open: boolean }) => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 160ms' }}><path d="M6 9l6 6 6-6" stroke="#9AA89D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const NoIco     = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5A8A62" strokeWidth="1.8"/><line x1="6" y1="18" x2="18" y2="6" stroke="#5A8A62" strokeWidth="1.8"/></svg>;
+const GridIco   = ({ active }: { active: boolean }) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" fill={active ? '#fff' : '#9AA89D'}/><rect x="14" y="3" width="7" height="7" rx="1.5" fill={active ? '#fff' : '#9AA89D'}/><rect x="3" y="14" width="7" height="7" rx="1.5" fill={active ? '#fff' : '#9AA89D'}/><rect x="14" y="14" width="7" height="7" rx="1.5" fill={active ? '#fff' : '#9AA89D'}/></svg>;
+const ListIco   = ({ active }: { active: boolean }) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="4" rx="1.2" fill={active ? '#fff' : '#9AA89D'}/><rect x="3" y="10" width="18" height="4" rx="1.2" fill={active ? '#fff' : '#9AA89D'}/><rect x="3" y="16" width="18" height="4" rx="1.2" fill={active ? '#fff' : '#9AA89D'}/></svg>;
 
 /* ── Collapsible section ───────────────── */
 const FSection: FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({
@@ -197,7 +201,7 @@ const FilterSidebar: FC<SidebarProps> = ({
   discountOnly, onDiscountOnly,
   onReset,
 }) => {
-  const catProducts = allProducts.filter(p => p.category === activeCat);
+  const catProducts = activeCat === 'all' ? allProducts : allProducts.filter(p => p.category === activeCat);
   const brandCounts: Record<string, number> = {};
   catProducts.forEach(p => { brandCounts[p.brand] = (brandCounts[p.brand] ?? 0) + 1; });
   const brands  = Object.entries(brandCounts).sort((a, b) => b[1] - a[1]);
@@ -376,6 +380,7 @@ const ProductPage: FC<ProductPageProps> = ({ onProductClick, initialCategory }) 
   const [selectedCerts,   setSelectedCerts]   = useState<string[]>([]);
   const [selectedDelivery, setSelectedDelivery] = useState<string[]>([]);
   const [discountOnly,    setDiscountOnly]    = useState(false);
+  const [view,            setView]            = useState<'grid' | 'list'>('grid');
 
   const subs = SUBCATS[activeCat] ?? ['전체'];
 
@@ -406,7 +411,7 @@ const ProductPage: FC<ProductPageProps> = ({ onProductClick, initialCategory }) 
 
   const sorted = useMemo(() => {
     const filtered = products.filter(p => {
-      if (p.category !== activeCat) return false;
+      if (activeCat !== 'all' && p.category !== activeCat) return false;
       if (activeSub !== '전체' && p.subcat !== activeSub) return false;
       if (query && !p.name.includes(query) && !p.brand.includes(query)) return false;
       if (allExcludedAllergens.length > 0 && (p.allergens ?? []).some(a => allExcludedAllergens.includes(a))) return false;
@@ -456,15 +461,14 @@ const ProductPage: FC<ProductPageProps> = ({ onProductClick, initialCategory }) 
   }
 
   // Applied filter chips
-  type Chip = { label: string; onRemove: () => void };
+  type Chip = { label: string; icon?: React.ReactNode; onRemove: () => void };
   const activeChips: Chip[] = [
-    ...(safeOnly ? [{ label: '안전 필터 ON', onRemove: () => setSafeOnly(false) }] : []),
     ...excludedGroups.map(gid => {
       const g = myGroups.find(g => g.id === gid);
-      return { label: `${g?.name ?? gid} 그룹 제외`, onRemove: () => setExcludedGroups(prev => prev.filter(x => x !== gid)) };
+      return { label: `${g?.name ?? gid} 그룹 제외`, icon: <NoIco/>, onRemove: () => setExcludedGroups(prev => prev.filter(x => x !== gid)) };
     }),
-    ...excludedAllergens.map(a => ({ label: `${a} 제외`, onRemove: () => setExcludedAllergens(prev => prev.filter(x => x !== a)) })),
-    ...excludedDiseases.map(d => ({ label: `${d} 케어`, onRemove: () => setExcludedDiseases(prev => prev.filter(x => x !== d)) })),
+    ...excludedAllergens.map(a => ({ label: `${a} 제외`, icon: <NoIco/>, onRemove: () => setExcludedAllergens(prev => prev.filter(x => x !== a)) })),
+    ...excludedDiseases.map(d => ({ label: `${d} 케어`, icon: <NoIco/>, onRemove: () => setExcludedDiseases(prev => prev.filter(x => x !== d)) })),
     ...selectedOrigins.map(o => ({ label: o, onRemove: () => setSelectedOrigins(prev => prev.filter(x => x !== o)) })),
     ...selectedCerts.map(c => ({ label: c, onRemove: () => setSelectedCerts(prev => prev.filter(x => x !== c)) })),
     ...selectedDelivery.map(d => ({ label: d, onRemove: () => setSelectedDelivery(prev => prev.filter(x => x !== d)) })),
@@ -479,29 +483,14 @@ const ProductPage: FC<ProductPageProps> = ({ onProductClick, initialCategory }) 
   ).length;
 
   return (
-    <div style={{ background: '#FAFAF6', minHeight: '100vh', paddingBottom: 80 }}>
-
-      {/* 카테고리 헤더 배너 */}
-      <div style={{ background: 'linear-gradient(120deg, #0F1E12 0%, #1F4D2C 55%, #2E7D32 100%)' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 40px 20px' }}>
-          <h1 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 4 }}>
-            {CAT_NAMES[activeCat] ?? activeCat}
-          </h1>
-          <div style={{ fontSize: 12, color: '#A8E063', display: 'flex', gap: 10 }}>
-            <span>총 <strong>{sorted.length}</strong>개</span>
-            <span style={{ opacity: 0.5 }}>·</span>
-            <span>안전 상품 <strong>{safeCount}</strong>개</span>
-          </div>
-        </div>
-      </div>
+    <div style={{ background: '#fff', minHeight: '100vh', paddingBottom: 80 }}>
 
       {/* 서브카테고리 레일 */}
       <div style={{ background: '#fff', borderBottom: '1px solid #E5E7E1' }}>
         <div
-          style={{ maxWidth: 1280, margin: '0 auto', padding: '10px 40px', display: 'flex', gap: 6, overflowX: 'auto', alignItems: 'center' }}
+          style={{ maxWidth: 1280, margin: '0 auto', padding: '14px 40px', display: 'flex', gap: 6, overflowX: 'auto', alignItems: 'center' }}
           className="scrollbar-hide"
         >
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#C9CFC4', marginRight: 4, flexShrink: 0 }}>세부</span>
           {subs.map((s, i) => {
             const isActive = i === 0 ? activeSub === '전체' : s === activeSub;
             return (
@@ -588,57 +577,112 @@ const ProductPage: FC<ProductPageProps> = ({ onProductClick, initialCategory }) 
 
           {/* 상품 영역 */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            {/* 결과 수 + 정렬 */}
+
+            {/* 카테고리 배너 카드 */}
+            <div style={{
+              background: 'linear-gradient(120deg, #0F1E12 0%, #1F4D2C 55%, #2E7D32 100%)',
+              borderRadius: 16, padding: '22px 26px', marginBottom: 18,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16,
+            }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#A8E063', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                  CATEGORY · {CAT_NAMES[activeCat] ?? activeCat}
+                </div>
+                <h1 style={{ fontSize: 22, fontWeight: 800, color: '#fff', margin: 0 }}>
+                  {CAT_NAMES[activeCat] ?? activeCat}
+                </h1>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span>전체 <strong style={{ color: '#fff' }}>{sorted.length}</strong>개</span>
+                  {user?.name && (
+                    <>
+                      <span style={{ opacity: 0.4 }}>·</span>
+                      <span>{user.name}님 프로필 안전 <strong style={{ color: '#A8E063' }}>{safeCount}</strong>개</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              {safeOnly && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px',
+                  background: 'rgba(168,224,99,0.16)', border: '1px solid rgba(168,224,99,0.4)',
+                  borderRadius: 999, fontSize: 12, fontWeight: 700, color: '#A8E063', whiteSpace: 'nowrap', flexShrink: 0,
+                }}>✓ 안전 필터 ON</span>
+              )}
+            </div>
+
+            {/* 적용된 필터 칩 */}
+            {activeChips.length > 0 && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7A6E', marginBottom: 6 }}>적용 필터</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {activeChips.map(chip => (
+                    <span
+                      key={chip.label}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '3px 10px', background: '#EFF6EF', color: '#1F4D2C',
+                        borderRadius: 999, fontSize: 11, fontWeight: 600, border: '1px solid #C3E6CA',
+                      }}
+                    >
+                      {chip.icon}
+                      {chip.label}
+                      <button
+                        onClick={chip.onRemove}
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#5A8A62' }}
+                      ><XIcon /></button>
+                    </span>
+                  ))}
+                  <button
+                    onClick={reset}
+                    style={{ padding: '3px 10px', borderRadius: 999, border: '1px solid #E5E7E1', background: 'transparent', color: '#9AA89D', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
+                  >전체 해제</button>
+                </div>
+              </div>
+            )}
+
+            {/* 정렬 + 결과 수 + 뷰 토글 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-              <span style={{ fontSize: 13, color: '#6B7A6E' }}>
-                총 <strong style={{ color: '#0F1E12' }}>{sorted.length}</strong>개 상품
-              </span>
-              <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap', alignItems: 'center' }}>
                 {SORT_OPTS.map((opt, i) => (
                   <span key={opt.id} style={{ display: 'inline-flex', alignItems: 'center' }}>
                     {i > 0 && <span style={{ width: 1, height: 11, background: '#E5E7E1', margin: '0 5px' }} />}
                     <button
                       onClick={() => setSort(opt.id)}
                       style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5,
                         background: 'transparent', border: 'none', cursor: 'pointer',
                         fontFamily: 'inherit', fontSize: 12,
                         fontWeight: sort === opt.id ? 700 : 500,
                         color: sort === opt.id ? '#0F1E12' : '#9AA89D',
                       }}
-                    >{opt.label}</button>
+                    >
+                      {sort === opt.id && <span style={{ width: 4, height: 4, borderRadius: 999, background: '#1F4D2C' }} />}
+                      {opt.label}
+                    </button>
                   </span>
                 ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 12, color: '#6B7A6E' }}>
+                  총 <strong style={{ color: '#0F1E12' }}>{sorted.length}</strong>개
+                </span>
+                <div style={{ display: 'flex', gap: 2, border: '1px solid #E5E7E1', borderRadius: 8, padding: 2 }}>
+                  <button
+                    onClick={() => setView('grid')}
+                    aria-label="격자 보기"
+                    style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 6, cursor: 'pointer', background: view === 'grid' ? '#1F4D2C' : 'transparent' }}
+                  ><GridIco active={view === 'grid'} /></button>
+                  <button
+                    onClick={() => setView('list')}
+                    aria-label="목록 보기"
+                    style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 6, cursor: 'pointer', background: view === 'list' ? '#1F4D2C' : 'transparent' }}
+                  ><ListIco active={view === 'list'} /></button>
+                </div>
               </div>
             </div>
 
-            {/* 적용된 필터 칩 */}
-            {activeChips.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                {activeChips.map(chip => (
-                  <span
-                    key={chip.label}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 4,
-                      padding: '3px 10px', background: '#EFF6EF', color: '#1F4D2C',
-                      borderRadius: 999, fontSize: 11, fontWeight: 600, border: '1px solid #C3E6CA',
-                    }}
-                  >
-                    {chip.label}
-                    <button
-                      onClick={chip.onRemove}
-                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#5A8A62' }}
-                    ><XIcon /></button>
-                  </span>
-                ))}
-                <button
-                  onClick={reset}
-                  style={{ padding: '3px 10px', borderRadius: 999, border: '1px solid #E5E7E1', background: 'transparent', color: '#9AA89D', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
-                >전체 해제</button>
-              </div>
-            )}
-
-            {/* 3열 그리드 */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            {/* 상품 그리드 */}
+            <div style={{ display: 'grid', gridTemplateColumns: view === 'grid' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: 16 }}>
               {pageItems.map(p => (
                 <ProductCard key={p.id} product={p} onClick={() => onProductClick?.(p)} />
               ))}

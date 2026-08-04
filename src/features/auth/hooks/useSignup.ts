@@ -10,9 +10,23 @@ import {
 } from "../services/authApi";
 import type { Term } from "../services/authApi";
 import { useAuth } from "../store/useAuth";
+import { hasHangul, romanizeKoreanName, saveLocalDisplayName } from "../utils/displayName";
 
 type NicknameStatus = "idle" | "available" | "duplicate";
 type VerifyStatus   = "idle" | "sent" | "verified";
+
+interface ApiErrorBody {
+  message?: string;
+  errors?: Record<string, string>;
+}
+
+function extractErrorMessage(err: unknown, fallback: string): string {
+  const body = (err as { response?: { data?: ApiErrorBody } })?.response?.data;
+  if (!body) return fallback;
+  const fieldMessages = body.errors ? Object.values(body.errors) : [];
+  if (fieldMessages.length > 0) return fieldMessages.join("\n");
+  return body.message ?? fallback;
+}
 
 export function useSignup(onComplete?: () => void | Promise<void>) {
   const { login: setAuth } = useAuth();
@@ -55,8 +69,9 @@ export function useSignup(onComplete?: () => void | Promise<void>) {
     try {
       const available = await checkNicknameApi(nickname);
       setNicknameStatus(available ? "available" : "duplicate");
-    } catch {
+    } catch (err) {
       setNicknameStatus("duplicate");
+      setError(extractErrorMessage(err, "닉네임 중복 검사에 실패했습니다."));
     }
   }
 
@@ -66,8 +81,8 @@ export function useSignup(onComplete?: () => void | Promise<void>) {
     try {
       await sendEmailCodeApi(email);
       setEmailStatus("sent");
-    } catch {
-      setError("이메일 발송에 실패했습니다.");
+    } catch (err) {
+      setError(extractErrorMessage(err, "이메일 발송에 실패했습니다."));
     }
   }
 
@@ -78,8 +93,8 @@ export function useSignup(onComplete?: () => void | Promise<void>) {
       const verified = await verifyEmailCodeApi(email, emailCode);
       setEmailStatus(verified ? "verified" : "sent");
       if (!verified) setError("인증번호가 올바르지 않습니다.");
-    } catch {
-      setError("인증번호 확인에 실패했습니다.");
+    } catch (err) {
+      setError(extractErrorMessage(err, "인증번호 확인에 실패했습니다."));
     }
   }
 
@@ -92,8 +107,8 @@ export function useSignup(onComplete?: () => void | Promise<void>) {
       const code = await sendPhoneCodeApi(phone);
       setPhoneVerifyCode(code);
       setPhoneStatus("sent");
-    } catch {
-      setError("휴대폰 인증번호 발송에 실패했습니다.");
+    } catch (err) {
+      setError(extractErrorMessage(err, "휴대폰 인증번호 발송에 실패했습니다."));
     } finally {
       setLoading(false);
     }
@@ -114,9 +129,8 @@ export function useSignup(onComplete?: () => void | Promise<void>) {
         setPhoneStatus("sent");
         setError("아직 SMS 인증이 완료되지 않았습니다.");
       }
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg ?? "인증 확인에 실패했습니다.");
+    } catch (err) {
+      setError(extractErrorMessage(err, "인증 확인에 실패했습니다."));
     } finally {
       setLoading(false);
     }
@@ -140,19 +154,23 @@ export function useSignup(onComplete?: () => void | Promise<void>) {
     setError(null);
     try {
       const requiredTermIds = terms.filter(t => t.is_required).map(t => t.id);
+      // 백엔드가 한글 name을 거부하는 버그 우회: 한글이면 로마자로 변환해 보내고,
+      // 원래 한글 이름은 saveLocalDisplayName으로 보관해 화면엔 항상 한글로 표시한다.
+      const submittedName = hasHangul(name) ? romanizeKoreanName(name) : name;
       const tokens = await signupApi({
         email,
         password,
-        name,
+        name: submittedName,
         nickname,
         phone: phone.replace(/-/g, ""),
         phone_verification_token: phoneVerificationToken,
         term_ids: requiredTermIds,
       });
+      saveLocalDisplayName(tokens.user.id, name);
       setAuth(tokens);
       await onCompleteRef.current?.();
-    } catch {
-      setError("회원가입에 실패했습니다. 다시 시도해주세요.");
+    } catch (err) {
+      setError(extractErrorMessage(err, "회원가입에 실패했습니다. 다시 시도해주세요."));
     } finally {
       setLoading(false);
     }

@@ -38,7 +38,7 @@ export function useLike() {
   useEffect(() => { fetchFromAPI(); }, [fetchFromAPI]);
 
   function isLiked(productId: string) {
-    return isLocallyLiked(productId);
+    return isLoggedIn && isLocallyLiked(productId);
   }
 
   async function toggleLike(productId: string, info?: { title: string }) {
