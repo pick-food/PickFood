@@ -12,6 +12,7 @@ import ProductDetailPage  from "./features/product/components/ProductDetailPage"
 import RecipePage         from "./features/recipe/components/RecipePage";
 import MyPage             from "./features/mypage/components/MyPage";
 import { useAuth }        from "./features/auth/store/useAuth";
+import { connectAiutoForm } from "./shared/lib/aiutoform";
 import type { Product }   from "./features/product/models/type";
 import Chatbot            from "./features/chat/components/Chatbot";
 import ChatPage           from "./features/chat/components/ChatPage";
@@ -42,6 +43,11 @@ function AppInner() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // AiutoForm 위젯 시험 — 로그인하면 정식 세션을 위젯에 넘긴다 (shared/lib/aiutoform.ts)
+  useEffect(() => {
+    if (isLoggedIn) void connectAiutoForm();
+  }, [isLoggedIn]);
 
   useEffect(() => {
     function handleNavigate(e: Event) {
