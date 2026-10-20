@@ -11,7 +11,14 @@ declare global {
   }
 }
 
+let listening = false;
+
 export async function connectAiutoForm(): Promise<void> {
+  // 위젯 세션이 만료되면 위젯이 이 이벤트를 쏜다 — 다시 발급해서 넘긴다.
+  if (!listening) {
+    listening = true;
+    window.addEventListener("aiutoform:session-expired", () => void connectAiutoForm());
+  }
   let session: { token: string; expiresAt: string };
   try {
     const res = await apiClient.post("/aiutoform/session");
